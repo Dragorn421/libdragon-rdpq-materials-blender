@@ -16,22 +16,27 @@ class RDPQMaterialTextureAxisProperties(bpy.types.PropertyGroup):
     translate: bpy.props.FloatProperty(
         name="Translate",
         description="",
+        default=0,
     )
     scale: bpy.props.IntProperty(
         name="Scale",
         description="",
+        default=0,
     )
     repeats_inf: bpy.props.BoolProperty(
         name="Repeats Infinitely",
         description="",
+        default=False,
     )
     repeats: bpy.props.FloatProperty(
         name="Repeats",
         description="",
+        default=1,
     )
     mirror: bpy.props.BoolProperty(
         name="Mirror",
         description="",
+        default=False,
     )
 
 
@@ -39,14 +44,19 @@ class RDPQMaterialTextureProperties(bpy.types.PropertyGroup):
     use_texture: bpy.props.BoolProperty(
         name="Use Texture",
         description="",
+        default=True,
     )
     use_placeholder: bpy.props.BoolProperty(
         name="Use Placeholder",
         description="",
+        default=False,
     )
     placeholder: bpy.props.IntProperty(
         name="Placeholder",
         description="",
+        default=1,
+        min=1,
+        max=15,
     )
     format: bpy.props.EnumProperty(
         name="Format",
@@ -59,6 +69,7 @@ class RDPQMaterialTextureProperties(bpy.types.PropertyGroup):
             ("SHQ", "SHQ", ""),
             ("IHQ", "IHQ", ""),
         ),
+        default="AUTO",
     )
     mipmap: bpy.props.EnumProperty(
         name="Mipmap",
@@ -67,6 +78,7 @@ class RDPQMaterialTextureProperties(bpy.types.PropertyGroup):
             ("NONE", "None", ""),
             ("BOX", "Box", ""),
         ),
+        default="NONE",
     )
     dithering: bpy.props.EnumProperty(
         name="Dithering",
@@ -76,6 +88,7 @@ class RDPQMaterialTextureProperties(bpy.types.PropertyGroup):
             ("RANDOM", "Random", ""),
             ("ORDERED", "Ordered", ""),
         ),
+        default="NONE",
     )
     s: bpy.props.PointerProperty(type=RDPQMaterialTextureAxisProperties)
     t: bpy.props.PointerProperty(type=RDPQMaterialTextureAxisProperties)
@@ -266,7 +279,7 @@ alpha_D_inputs_items = (
 
 class RDPQMaterialCombinerProperties(bpy.types.PropertyGroup):
     preset: bpy.props.EnumProperty(
-        name="Preset",
+        name="Combiner Preset",
         description="",
         items=(
             ("FLAT", "Flat", ""),
@@ -277,6 +290,7 @@ class RDPQMaterialCombinerProperties(bpy.types.PropertyGroup):
             ("CUSTOM_1_PASS", "Custom 1 Pass", ""),
             ("CUSTOM_2_PASSES", "Custom 2 Passes", ""),
         ),
+        default="TEX",
     )
 
     rgb_A_0: bpy.props.EnumProperty(
@@ -391,7 +405,7 @@ blender_B_inputs_items = (
 
 class RDPQMaterialBlenderProperties(bpy.types.PropertyGroup):
     preset: bpy.props.EnumProperty(
-        name="Preset",
+        name="Blender Preset",
         description="",
         items=(
             ("NONE", "None", ""),
@@ -448,12 +462,18 @@ class RDPQMaterialBlenderProperties(bpy.types.PropertyGroup):
     blend_color: bpy.props.FloatVectorProperty(
         name="Blend Color",
         description="",
+        default=(1, 1, 1, 1),
+        min=0,
+        max=1,
         subtype="COLOR",
         size=4,
     )
     fog_color: bpy.props.FloatVectorProperty(
         name="Fog Color",
         description="",
+        default=(1, 1, 1, 1),
+        min=0,
+        max=1,
         subtype="COLOR",
         size=4,
     )
@@ -472,6 +492,7 @@ class RDPQMaterialOverrideRenderModeProperties(bpy.types.PropertyGroup):
             ("STANDARD", "Standard", ""),
             ("REDUCED", "Reduced", ""),
         ),
+        default="STANDARD",
     )
 
     override_fog: bpy.props.BoolProperty(
@@ -486,6 +507,7 @@ class RDPQMaterialOverrideRenderModeProperties(bpy.types.PropertyGroup):
             ("STANDARD", "Standard", ""),
             ("CUSTOM", "Custom", ""),
         ),
+        default="STANDARD",
     )
 
     override_dithering: bpy.props.BoolProperty(
@@ -527,6 +549,7 @@ class RDPQMaterialOverrideRenderModeProperties(bpy.types.PropertyGroup):
             ("BILINEAR", "Bilinear", ""),
             ("MEDIAN", "Median", ""),
         ),
+        default="BILINEAR",
     )
 
     override_texture_perspective_correction: bpy.props.BoolProperty(
@@ -536,6 +559,7 @@ class RDPQMaterialOverrideRenderModeProperties(bpy.types.PropertyGroup):
     texture_perspective_correction: bpy.props.BoolProperty(
         name="Texture Perspective Correction",
         description="",
+        default=True,
     )
 
     override_alpha_compare: bpy.props.BoolProperty(
@@ -545,6 +569,9 @@ class RDPQMaterialOverrideRenderModeProperties(bpy.types.PropertyGroup):
     alpha_compare_threshold: bpy.props.IntProperty(
         name="Alpha Compare Threshold",
         description="",
+        default=127,
+        min=0,
+        max=255,
     )
 
     override_z_compare: bpy.props.BoolProperty(
@@ -554,6 +581,7 @@ class RDPQMaterialOverrideRenderModeProperties(bpy.types.PropertyGroup):
     z_compare: bpy.props.BoolProperty(
         name="Z Compare",
         description="",
+        default=True,
     )
 
     override_z_update: bpy.props.BoolProperty(
@@ -563,6 +591,7 @@ class RDPQMaterialOverrideRenderModeProperties(bpy.types.PropertyGroup):
     z_update: bpy.props.BoolProperty(
         name="Z Update",
         description="",
+        default=True,
     )
 
     override_fixed_z: bpy.props.BoolProperty(
