@@ -617,6 +617,13 @@ class RDPQMaterialProperties(bpy.types.PropertyGroup):
     )
 
 
+def prop_split(layout: bpy.types.UILayout, data, prop_name: str):
+    layout.use_property_split = True
+    layout.use_property_decorate = False
+    layout.prop(data, prop_name)
+    layout.use_property_split = False
+
+
 class RDPQMaterialPanel(bpy.types.Panel):
     bl_idname = "MATERIAL_PT_libdragon_rdpq"
     bl_label = "RDPQ"
@@ -638,27 +645,45 @@ class RDPQMaterialPanel(bpy.types.Panel):
         box = layout.box()
         box.prop(mat_rdpq.texture, "use_texture")
         if mat_rdpq.texture.use_texture:
-            box.prop(mat_rdpq.texture, "use_placeholder")
-            if mat_rdpq.texture.use_placeholder:
-                box.prop(mat_rdpq.texture, "placeholder")
-            box.prop(mat_rdpq.texture, "format")
-            box.prop(mat_rdpq.texture, "mipmap")
-            box.prop(mat_rdpq.texture, "dithering")
+            row = box.row()
+            row.prop(mat_rdpq.texture, "use_placeholder", text="")
+            col = row.column()
+            col.prop(mat_rdpq.texture, "placeholder")
+            col.enabled = mat_rdpq.texture.use_placeholder
+            prop_split(box, mat_rdpq.texture, "format")
+            prop_split(box, mat_rdpq.texture, "mipmap")
+            prop_split(box, mat_rdpq.texture, "dithering")
+
             box_s = box.box()
+            box_s.label(text="S Properties")
             box_s.prop(mat_rdpq.texture.s, "translate")
             box_s.prop(mat_rdpq.texture.s, "scale")
-            box_s.prop(mat_rdpq.texture.s, "repeats_inf")
-            box_s.prop(mat_rdpq.texture.s, "repeats")
+
+            row = box_s.row()
+            row.label(text="Repeats")
+            col = row.column()
+            col.prop(mat_rdpq.texture.s, "repeats", text="")
+            col.enabled = not mat_rdpq.texture.s.repeats_inf
+            row.prop(mat_rdpq.texture.s, "repeats_inf", text="Infinite")
+
             box_s.prop(mat_rdpq.texture.s, "mirror")
+
             box_t = box.box()
+            box_t.label(text="T Properties")
             box_t.prop(mat_rdpq.texture.t, "translate")
             box_t.prop(mat_rdpq.texture.t, "scale")
-            box_t.prop(mat_rdpq.texture.t, "repeats_inf")
-            box_t.prop(mat_rdpq.texture.t, "repeats")
+
+            row = box_t.row()
+            row.label(text="Repeats")
+            col = row.column()
+            col.prop(mat_rdpq.texture.t, "repeats", text="")
+            col.enabled = not mat_rdpq.texture.t.repeats_inf
+            row.prop(mat_rdpq.texture.t, "repeats_inf", text="Infinite")
+
             box_t.prop(mat_rdpq.texture.t, "mirror")
 
         box = layout.box()
-        box.prop(mat_rdpq.combiner, "preset")
+        prop_split(box, mat_rdpq.combiner, "preset")
         if mat_rdpq.combiner.preset in {"CUSTOM_1_PASS", "CUSTOM_2_PASSES"}:
             box.prop(mat_rdpq.combiner, "rgb_A_0")
             box.prop(mat_rdpq.combiner, "rgb_B_0")
@@ -679,7 +704,7 @@ class RDPQMaterialPanel(bpy.types.Panel):
             box.prop(mat_rdpq.combiner, "alpha_D_1")
 
         box = layout.box()
-        box.prop(mat_rdpq.blender, "preset")
+        prop_split(box, mat_rdpq.blender, "preset")
         if mat_rdpq.blender.preset in {"CUSTOM_1_PASS", "CUSTOM_2_PASSES"}:
             box.prop(mat_rdpq.blender, "p_0")
             box.prop(mat_rdpq.blender, "a_0")
@@ -690,34 +715,28 @@ class RDPQMaterialPanel(bpy.types.Panel):
             box.prop(mat_rdpq.blender, "a_1")
             box.prop(mat_rdpq.blender, "m_1")
             box.prop(mat_rdpq.blender, "b_1")
-        box.prop(mat_rdpq.blender, "blend_color")
-        box.prop(mat_rdpq.blender, "fog_color")
+        prop_split(box, mat_rdpq.blender, "blend_color")
+        prop_split(box, mat_rdpq.blender, "fog_color")
 
         box = layout.box()
-        box.prop(mat_rdpq.override_render_mode, "override_antialias")
-        if mat_rdpq.override_render_mode.override_antialias:
-            box.prop(mat_rdpq.override_render_mode, "antialias")
-        box.prop(mat_rdpq.override_render_mode, "override_texture_filtering")
-        if mat_rdpq.override_render_mode.override_texture_filtering:
-            box.prop(mat_rdpq.override_render_mode, "texture_filtering")
-        box.prop(
-            mat_rdpq.override_render_mode, "override_texture_perspective_correction"
+
+        def prop_override(override_prop_name: str, *props_names: str):
+            row = box.row()
+            row.prop(mat_rdpq.override_render_mode, override_prop_name, text="")
+            col = row.column()
+            for prop_name in props_names:
+                col.prop(mat_rdpq.override_render_mode, prop_name)
+            col.enabled = getattr(mat_rdpq.override_render_mode, override_prop_name)
+
+        prop_override("override_antialias", "antialias")
+        prop_override("override_texture_filtering", "texture_filtering")
+        prop_override(
+            "override_texture_perspective_correction", "texture_perspective_correction"
         )
-        if mat_rdpq.override_render_mode.override_texture_perspective_correction:
-            box.prop(mat_rdpq.override_render_mode, "texture_perspective_correction")
-        box.prop(mat_rdpq.override_render_mode, "override_alpha_compare")
-        if mat_rdpq.override_render_mode.override_alpha_compare:
-            box.prop(mat_rdpq.override_render_mode, "alpha_compare_threshold")
-        box.prop(mat_rdpq.override_render_mode, "override_z_compare")
-        if mat_rdpq.override_render_mode.override_z_compare:
-            box.prop(mat_rdpq.override_render_mode, "z_compare")
-        box.prop(mat_rdpq.override_render_mode, "override_z_update")
-        if mat_rdpq.override_render_mode.override_z_update:
-            box.prop(mat_rdpq.override_render_mode, "z_update")
-        box.prop(mat_rdpq.override_render_mode, "override_fixed_z")
-        if mat_rdpq.override_render_mode.override_fixed_z:
-            box.prop(mat_rdpq.override_render_mode, "fixed_z")
-            box.prop(mat_rdpq.override_render_mode, "fixed_z_deltaz")
+        prop_override("override_alpha_compare", "alpha_compare_threshold")
+        prop_override("override_z_compare", "z_compare")
+        prop_override("override_z_update", "z_update")
+        prop_override("override_fixed_z", "fixed_z", "fixed_z_deltaz")
 
 
 classes = (
