@@ -90,8 +90,16 @@ class RDPQMaterialTextureProperties(bpy.types.PropertyGroup):
         ),
         default="NONE",
     )
-    s: bpy.props.PointerProperty(type=RDPQMaterialTextureAxisProperties)
-    t: bpy.props.PointerProperty(type=RDPQMaterialTextureAxisProperties)
+    s_: bpy.props.PointerProperty(type=RDPQMaterialTextureAxisProperties)
+    t_: bpy.props.PointerProperty(type=RDPQMaterialTextureAxisProperties)
+
+    @property
+    def s(self) -> RDPQMaterialTextureAxisProperties:
+        return self.s_
+
+    @property
+    def t(self) -> RDPQMaterialTextureAxisProperties:
+        return self.t_
 
 
 # https://n64brew.dev/wiki/Reality_Display_Processor/Commands?oldid=5601#0x3C_-_Set_Combine_Mode
@@ -609,12 +617,28 @@ class RDPQMaterialOverrideRenderModeProperties(bpy.types.PropertyGroup):
 
 
 class RDPQMaterialProperties(bpy.types.PropertyGroup):
-    texture: bpy.props.PointerProperty(type=RDPQMaterialTextureProperties)
-    combiner: bpy.props.PointerProperty(type=RDPQMaterialCombinerProperties)
-    blender: bpy.props.PointerProperty(type=RDPQMaterialBlenderProperties)
-    override_render_mode: bpy.props.PointerProperty(
+    texture_: bpy.props.PointerProperty(type=RDPQMaterialTextureProperties)
+    combiner_: bpy.props.PointerProperty(type=RDPQMaterialCombinerProperties)
+    blender_: bpy.props.PointerProperty(type=RDPQMaterialBlenderProperties)
+    override_render_mode_: bpy.props.PointerProperty(
         type=RDPQMaterialOverrideRenderModeProperties
     )
+
+    @property
+    def texture(self) -> RDPQMaterialTextureProperties:
+        return self.texture_
+
+    @property
+    def combiner(self) -> RDPQMaterialCombinerProperties:
+        return self.combiner_
+
+    @property
+    def blender(self) -> RDPQMaterialBlenderProperties:
+        return self.blender_
+
+    @property
+    def override_render_mode(self) -> RDPQMaterialOverrideRenderModeProperties:
+        return self.override_render_mode_
 
 
 def prop_split(layout: bpy.types.UILayout, data, prop_name: str):
