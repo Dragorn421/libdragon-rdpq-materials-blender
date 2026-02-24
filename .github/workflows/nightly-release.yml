@@ -1,0 +1,45 @@
+name: Push
+
+on: [push]
+
+jobs:
+  nightly-release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      archive_name: libdragon_rdpq_materials_${{ github.sha }}.zip
+    steps:
+      - name: Delete previous nightly release
+        run: |
+            gh release --repo ${{ github.repository }} delete nightly --cleanup-tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        continue-on-error: true  # In case the release doesn't exist yet
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          path: libdragon_rdpq_materials
+          fetch-depth: 0
+      - name: Create nightly tag
+        run: |
+            git -C libdragon_rdpq_materials tag nightly
+            git -C libdragon_rdpq_materials push origin nightly
+      - name: Create zip
+        run: find libdragon_rdpq_materials -name LICENSE -o -name '*.py' | zip ${{ env.archive_name }} -@
+      - name: Release info
+        id: release_info
+        run: |
+            echo "now=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+            echo "message=$(git -C libdragon_rdpq_materials log -1 --pretty=%s)" >> $GITHUB_OUTPUT
+      - name: Create nightly release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          tag_name: nightly
+          name: libdragon RDPQ materials nightly ${{ steps.release_info.outputs.now }}
+          body: |
+            Nightly release of the libdragon RDPQ materials Blender addon
+            ${{ steps.release_info.outputs.message }}
+          files: ${{ env.archive_name }}
