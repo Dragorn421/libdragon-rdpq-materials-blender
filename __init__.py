@@ -13,18 +13,44 @@ import bpy.utils
 
 
 class RDPQMaterialTextureAxisProperties(bpy.types.PropertyGroup):
-    translate: bpy.props.FloatProperty()
-    scale: bpy.props.IntProperty()
-    repeats_inf: bpy.props.BoolProperty()
-    repeats: bpy.props.FloatProperty()
-    mirror: bpy.props.BoolProperty()
+    translate: bpy.props.FloatProperty(
+        name="Translate",
+        description="",
+    )
+    scale: bpy.props.IntProperty(
+        name="Scale",
+        description="",
+    )
+    repeats_inf: bpy.props.BoolProperty(
+        name="Repeats Infinitely",
+        description="",
+    )
+    repeats: bpy.props.FloatProperty(
+        name="Repeats",
+        description="",
+    )
+    mirror: bpy.props.BoolProperty(
+        name="Mirror",
+        description="",
+    )
 
 
 class RDPQMaterialTextureProperties(bpy.types.PropertyGroup):
-    use_texture: bpy.props.BoolProperty()
-    use_placeholder: bpy.props.BoolProperty()
-    placeholder: bpy.props.IntProperty()
+    use_texture: bpy.props.BoolProperty(
+        name="Use Texture",
+        description="",
+    )
+    use_placeholder: bpy.props.BoolProperty(
+        name="Use Placeholder",
+        description="",
+    )
+    placeholder: bpy.props.IntProperty(
+        name="Placeholder",
+        description="",
+    )
     format: bpy.props.EnumProperty(
+        name="Format",
+        description="",
         items=(
             ("AUTO", "Auto", ""),
             ("I4", "I4", ""),
@@ -32,20 +58,24 @@ class RDPQMaterialTextureProperties(bpy.types.PropertyGroup):
             # TODO fill in
             ("SHQ", "SHQ", ""),
             ("IHQ", "IHQ", ""),
-        )
+        ),
     )
     mipmap: bpy.props.EnumProperty(
+        name="Mipmap",
+        description="",
         items=(
             ("NONE", "None", ""),
             ("BOX", "Box", ""),
-        )
+        ),
     )
     dithering: bpy.props.EnumProperty(
+        name="Dithering",
+        description="",
         items=(
             ("NONE", "None", ""),
             ("RANDOM", "Random", ""),
             ("ORDERED", "Ordered", ""),
-        )
+        ),
     )
     s: bpy.props.PointerProperty(type=RDPQMaterialTextureAxisProperties)
     t: bpy.props.PointerProperty(type=RDPQMaterialTextureAxisProperties)
@@ -236,6 +266,8 @@ alpha_D_inputs_items = (
 
 class RDPQMaterialCombinerProperties(bpy.types.PropertyGroup):
     preset: bpy.props.EnumProperty(
+        name="Preset",
+        description="",
         items=(
             ("FLAT", "Flat", ""),
             ("SHADE", "Shade", ""),
@@ -244,7 +276,7 @@ class RDPQMaterialCombinerProperties(bpy.types.PropertyGroup):
             ("TEX_SHADE", "Tex Shade", ""),
             ("CUSTOM_1_PASS", "Custom 1 Pass", ""),
             ("CUSTOM_2_PASSES", "Custom 2 Passes", ""),
-        )
+        ),
     )
 
     rgb_A_0: bpy.props.EnumProperty(
@@ -359,6 +391,8 @@ blender_B_inputs_items = (
 
 class RDPQMaterialBlenderProperties(bpy.types.PropertyGroup):
     preset: bpy.props.EnumProperty(
+        name="Preset",
+        description="",
         items=(
             ("NONE", "None", ""),
             ("MULTIPLY", "Multiply", ""),
@@ -366,7 +400,7 @@ class RDPQMaterialBlenderProperties(bpy.types.PropertyGroup):
             ("ADDITIVE", "Additive", ""),
             ("CUSTOM_1_PASS", "Custom 1 Pass", ""),
             ("CUSTOM_2_PASSES", "Custom 2 Passes", ""),
-        )
+        ),
     )
 
     p_0: bpy.props.EnumProperty(
@@ -412,36 +446,55 @@ class RDPQMaterialBlenderProperties(bpy.types.PropertyGroup):
     )
 
     blend_color: bpy.props.FloatVectorProperty(
+        name="Blend Color",
+        description="",
         subtype="COLOR",
         size=4,
     )
     fog_color: bpy.props.FloatVectorProperty(
+        name="Fog Color",
+        description="",
         subtype="COLOR",
         size=4,
     )
 
 
 class RDPQMaterialOverrideRenderModeProperties(bpy.types.PropertyGroup):
-    override_antialias: bpy.props.BoolProperty()
+    override_antialias: bpy.props.BoolProperty(
+        name="Override Antialias",
+        description="",
+    )
     antialias: bpy.props.EnumProperty(
+        name="Antialias",
+        description="",
         items=(
             ("NONE", "None", ""),
             ("STANDARD", "Standard", ""),
             ("REDUCED", "Reduced", ""),
-        )
+        ),
     )
 
-    override_fog: bpy.props.BoolProperty()
+    override_fog: bpy.props.BoolProperty(
+        name="Override Fog",
+        description="",
+    )
     fog: bpy.props.EnumProperty(
+        name="Fog",
+        description="",
         items=(
             ("NONE", "None", ""),
             ("STANDARD", "Standard", ""),
             ("CUSTOM", "Custom", ""),
-        )
+        ),
     )
 
-    override_dithering: bpy.props.BoolProperty()
+    override_dithering: bpy.props.BoolProperty(
+        name="Override Dithering",
+        description="",
+    )
     dithering: bpy.props.EnumProperty(
+        name="Dithering",
+        description="",
         items=(
             ("RGB_SQUARE_A_SQUARE", "rgb=SQUARE alpha=SQUARE", ""),
             ("RGB_SQUARE_A_INVSQUARE", "rgb=SQUARE alpha=INVSQUARE", ""),
@@ -459,33 +512,71 @@ class RDPQMaterialOverrideRenderModeProperties(bpy.types.PropertyGroup):
             ("RGB_NONE_A_INVBAYER", "rgb=NONE alpha=INVBAYER", ""),
             ("RGB_NONE_A_NOISE", "rgb=NONE alpha=NOISE", ""),
             ("RGB_NONE_A_NONE", "rgb=NONE alpha=NONE", ""),
-        )
+        ),
     )
 
-    override_texture_filtering: bpy.props.BoolProperty()
+    override_texture_filtering: bpy.props.BoolProperty(
+        name="Override Texture Filtering",
+        description="",
+    )
     texture_filtering: bpy.props.EnumProperty(
+        name="Texture Filtering",
+        description="",
         items=(
             ("POINT", "Point", ""),
             ("BILINEAR", "Bilinear", ""),
             ("MEDIAN", "Median", ""),
-        )
+        ),
     )
 
-    override_texture_perspective_correction: bpy.props.BoolProperty()
-    texture_perspective_correction: bpy.props.BoolProperty()
+    override_texture_perspective_correction: bpy.props.BoolProperty(
+        name="Override Texture Perspective Correction",
+        description="",
+    )
+    texture_perspective_correction: bpy.props.BoolProperty(
+        name="Texture Perspective Correction",
+        description="",
+    )
 
-    override_alpha_compare: bpy.props.BoolProperty()
-    alpha_compare_threshold: bpy.props.IntProperty()
+    override_alpha_compare: bpy.props.BoolProperty(
+        name="Override Alpha Compare",
+        description="",
+    )
+    alpha_compare_threshold: bpy.props.IntProperty(
+        name="Alpha Compare Threshold",
+        description="",
+    )
 
-    override_z_compare: bpy.props.BoolProperty()
-    z_compare: bpy.props.BoolProperty()
+    override_z_compare: bpy.props.BoolProperty(
+        name="Override Z Compare",
+        description="",
+    )
+    z_compare: bpy.props.BoolProperty(
+        name="Z Compare",
+        description="",
+    )
 
-    override_z_update: bpy.props.BoolProperty()
-    z_update: bpy.props.BoolProperty()
+    override_z_update: bpy.props.BoolProperty(
+        name="Override Z Update",
+        description="",
+    )
+    z_update: bpy.props.BoolProperty(
+        name="Z Update",
+        description="",
+    )
 
-    override_fixed_z: bpy.props.BoolProperty()
-    fixed_z: bpy.props.IntProperty()
-    fixed_z_deltaz: bpy.props.IntProperty()
+    override_fixed_z: bpy.props.BoolProperty(
+        name="Override Fixed Z",
+        description="",
+    )
+    fixed_z: bpy.props.IntProperty(
+        name="Fixed Z",
+        description="",
+    )
+    fixed_z_deltaz: bpy.props.IntProperty(
+        name="Fixed Z deltaz",
+        description="",
+    )
 
 
 class RDPQMaterialProperties(bpy.types.PropertyGroup):
