@@ -1066,6 +1066,8 @@ class RDPQMaterialPanel(bpy.types.Panel):
             col.enabled = getattr(mat_rdpq.override_render_mode, override_prop_name)
 
         prop_override("override_antialias", "antialias")
+        prop_override("override_fog", "fog")
+        prop_override("override_dithering", "dithering")
         prop_override("override_texture_filtering", "texture_filtering")
         prop_override(
             "override_texture_perspective_correction", "texture_perspective_correction"
