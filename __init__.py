@@ -1309,9 +1309,6 @@ def rdpq_material_props_to_fast64_props(
 
     # Overrides
 
-    # TODO all "override" props should check for the override_* bool props
-    # and default to a world default if not overriden
-
     # TODO
     if mat_rdpq.override_render_mode.override_antialias:
         mat_rdpq.override_render_mode.antialias
@@ -1324,7 +1321,34 @@ def rdpq_material_props_to_fast64_props(
     else:
         world_rdpq.defaults.fog
 
-    mat_rdpq.override_render_mode.dithering  # TODO
+    (
+        mat_fast64.rdp_settings.g_mdsft_rgb_dither,
+        mat_fast64.rdp_settings.g_mdsft_alpha_dither,
+    ) = {
+        # TODO check these mappings are correct (I guessed)
+        "RGB_SQUARE_A_SQUARE": ("G_CD_MAGICSQ", "G_AD_PATTERN"),
+        "RGB_SQUARE_A_INVSQUARE": ("G_CD_MAGICSQ", "G_AD_NOTPATTERN"),
+        "RGB_SQUARE_A_NOISE": ("G_CD_MAGICSQ", "G_AD_NOISE"),
+        "RGB_SQUARE_A_NONE": ("G_CD_MAGICSQ", "G_AD_DISABLE"),
+        "RGB_BAYER_A_BAYER": ("G_CD_BAYER", "G_AD_PATTERN"),
+        "RGB_BAYER_A_INVBAYER": ("G_CD_BAYER", "G_AD_NOTPATTERN"),
+        "RGB_BAYER_A_NOISE": ("G_CD_BAYER", "G_AD_NOISE"),
+        "RGB_BAYER_A_NONE": ("G_CD_BAYER", "G_AD_DISABLE"),
+        "RGB_NOISE_A_SQUARE": ("G_CD_NOISE", "G_AD_PATTERN"),
+        "RGB_NOISE_A_INVSQUARE": ("G_CD_NOISE", "G_AD_NOTPATTERN"),
+        "RGB_NOISE_A_NOISE": ("G_CD_NOISE", "G_AD_NOISE"),
+        "RGB_NOISE_A_NONE": ("G_CD_NOISE", "G_AD_DISABLE"),
+        "RGB_NONE_A_BAYER": ("G_CD_DISABLE", "G_AD_PATTERN"),
+        "RGB_NONE_A_INVBAYER": ("G_CD_DISABLE", "G_AD_NOTPATTERN"),
+        "RGB_NONE_A_NOISE": ("G_CD_DISABLE", "G_AD_NOISE"),
+        "RGB_NONE_A_NONE": ("G_CD_DISABLE", "G_AD_DISABLE"),
+    }[
+        (
+            mat_rdpq.override_render_mode.dithering
+            if mat_rdpq.override_render_mode.override_dithering
+            else world_rdpq.defaults.dithering
+        )
+    ]
 
     mat_fast64.rdp_settings.g_mdsft_text_filt = {
         "POINT": "G_TF_POINT",
