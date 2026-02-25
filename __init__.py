@@ -1415,6 +1415,15 @@ def rdpq_material_props_to_fast64_props(
         else:
             mat_fast64.rdp_settings.g_mdsft_zsrcsel = "G_ZS_PIXEL"
 
+    # Other
+
+    mat_fast64.rdp_settings.g_shade_smooth = True
+    mat_fast64.rdp_settings.g_lighting = False
+    mat_fast64.rdp_settings.g_cull_front = False
+    mat_fast64.rdp_settings.g_cull_back = True
+    mat_fast64.rdp_settings.g_zbuffer = True
+    mat_fast64.rdp_settings.g_shade = True
+
 
 MSGBUS_OWNER = object()
 
