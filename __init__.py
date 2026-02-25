@@ -2171,7 +2171,50 @@ class RDPQMaterialExportOperator(bpy.types.Operator):
         return {"FINISHED"}
 
 
+# https://github.com/KhronosGroup/glTF-Blender-IO/blob/main/example-addons/example_gltf_exporter_extension
+
+glTF_extension_name = "EXT_libdragon_rdpq_materials_jmat"
+
+
+class glTF2ExportUserExtension:
+
+    def __init__(self):
+        from io_scene_gltf2.io.com.gltf2_io_extensions import Extension
+
+        self.Extension = Extension
+        self.properties = bpy.context.scene.libdragon_rdpq.gltf_extension
+
+    def gather_material_hook(
+        self,
+        gltf2_material: "io_scene_gltf2.io.com.gltf2_io.Material",
+        blender_material: bpy.types.Material,
+        export_settings,
+    ):
+        gltf2_material.extensions[glTF_extension_name] = (
+            rdpq_material_properties_to_dict(blender_material.libdragon_rdpq)
+        )
+
+
+class glTFExtensionProperties(bpy.types.PropertyGroup):
+    enabled: bpy.props.BoolProperty(
+        name=bl_info["name"],
+        description="Include this extension in the exported glTF file.",
+        default=True,
+    )
+
+
+def draw_gltf_extension_props(context: bpy.types.Context, layout: bpy.types.UILayout):
+    layout.use_property_split = False
+    layout.prop(context.scene.libdragon_rdpq.gltf_extension, "enabled")
+
+
+class RDPQSceneProperties(bpy.types.PropertyGroup):
+    gltf_extension: bpy.props.PointerProperty(type=glTFExtensionProperties)
+
+
 classes = (
+    glTFExtensionProperties,
+    RDPQSceneProperties,
     RDPQWorldDefaultsProperties,
     RDPQWorldProperties,
     RDPQMaterialTextureAxisProperties,
@@ -2191,6 +2234,7 @@ classes = (
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
+    bpy.types.Scene.libdragon_rdpq = bpy.props.PointerProperty(type=RDPQSceneProperties)
     bpy.types.Material.libdragon_rdpq = bpy.props.PointerProperty(
         type=RDPQMaterialProperties
     )
@@ -2202,14 +2246,25 @@ def register():
         lambda: handler_load_post_start_materials_auto_sync_to_fast64()
     )
 
+    from io_scene_gltf2 import exporter_extension_layout_draw
+
+    exporter_extension_layout_draw["libdragon RDPQ materials"] = (
+        draw_gltf_extension_props
+    )
+
 
 def unregister():
+    from io_scene_gltf2 import exporter_extension_layout_draw
+
+    del exporter_extension_layout_draw["libdragon RDPQ materials"]
+
     try:
         bpy.app.handlers.load_post.remove(
             handler_load_post_start_materials_auto_sync_to_fast64
         )
     except ValueError:
         pass
+    del bpy.types.Scene.libdragon_rdpq
     del bpy.types.Material.libdragon_rdpq
     del bpy.types.World.libdragon_rdpq
     for cls in reversed(classes):
