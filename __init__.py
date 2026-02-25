@@ -408,6 +408,101 @@ def combiner_items(items: Iterable[tuple[str, str, str]], cycle: Literal[0, 1]):
     return new_items
 
 
+def on_update_combiner_preset(self, context: bpy.types.Context):
+    mat = context.material
+    assert mat is not None
+    mat_rdpq: RDPQMaterialProperties = mat.libdragon_rdpq
+    if mat_rdpq.combiner.preset == "FLAT":
+        mat_rdpq.combiner.rgb_A_0 = "0"
+        mat_rdpq.combiner.rgb_B_0 = "0"
+        mat_rdpq.combiner.rgb_C_0 = "0"
+        mat_rdpq.combiner.rgb_D_0 = "PRIMITIVE"
+        mat_rdpq.combiner.alpha_A_0 = "0"
+        mat_rdpq.combiner.alpha_B_0 = "0"
+        mat_rdpq.combiner.alpha_C_0 = "0"
+        mat_rdpq.combiner.alpha_D_0 = "PRIMITIVE"
+        mat_rdpq.combiner.rgb_A_1 = "0"
+        mat_rdpq.combiner.rgb_B_1 = "0"
+        mat_rdpq.combiner.rgb_C_1 = "0"
+        mat_rdpq.combiner.rgb_D_1 = "PRIMITIVE"
+        mat_rdpq.combiner.alpha_A_1 = "0"
+        mat_rdpq.combiner.alpha_B_1 = "0"
+        mat_rdpq.combiner.alpha_C_1 = "0"
+        mat_rdpq.combiner.alpha_D_1 = "PRIMITIVE"
+    elif mat_rdpq.combiner.preset == "SHADE":
+        # TODO handle fog
+        mat_rdpq.combiner.rgb_A_0 = "0"
+        mat_rdpq.combiner.rgb_B_0 = "0"
+        mat_rdpq.combiner.rgb_C_0 = "0"
+        mat_rdpq.combiner.rgb_D_0 = "SHADE"
+        mat_rdpq.combiner.alpha_A_0 = "0"
+        mat_rdpq.combiner.alpha_B_0 = "0"
+        mat_rdpq.combiner.alpha_C_0 = "0"
+        mat_rdpq.combiner.alpha_D_0 = "SHADE"
+        mat_rdpq.combiner.rgb_A_1 = "0"
+        mat_rdpq.combiner.rgb_B_1 = "0"
+        mat_rdpq.combiner.rgb_C_1 = "0"
+        mat_rdpq.combiner.rgb_D_1 = "SHADE"
+        mat_rdpq.combiner.alpha_A_1 = "0"
+        mat_rdpq.combiner.alpha_B_1 = "0"
+        mat_rdpq.combiner.alpha_C_1 = "0"
+        mat_rdpq.combiner.alpha_D_1 = "SHADE"
+    elif mat_rdpq.combiner.preset == "TEX":
+        # TODO handle mipmapping / custom image formats
+        mat_rdpq.combiner.rgb_A_0 = "0"
+        mat_rdpq.combiner.rgb_B_0 = "0"
+        mat_rdpq.combiner.rgb_C_0 = "0"
+        mat_rdpq.combiner.rgb_D_0 = "TEX0"
+        mat_rdpq.combiner.alpha_A_0 = "0"
+        mat_rdpq.combiner.alpha_B_0 = "0"
+        mat_rdpq.combiner.alpha_C_0 = "0"
+        mat_rdpq.combiner.alpha_D_0 = "TEX0"
+        mat_rdpq.combiner.rgb_A_1 = "0"
+        mat_rdpq.combiner.rgb_B_1 = "0"
+        mat_rdpq.combiner.rgb_C_1 = "0"
+        mat_rdpq.combiner.rgb_D_1 = "COMBINED"
+        mat_rdpq.combiner.alpha_A_1 = "0"
+        mat_rdpq.combiner.alpha_B_1 = "0"
+        mat_rdpq.combiner.alpha_C_1 = "0"
+        mat_rdpq.combiner.alpha_D_1 = "COMBINED"
+    elif mat_rdpq.combiner.preset == "TEX_FLAT":
+        # TODO handle mipmapping / custom image formats
+        mat_rdpq.combiner.rgb_A_0 = "TEX0"
+        mat_rdpq.combiner.rgb_B_0 = "0"
+        mat_rdpq.combiner.rgb_C_0 = "PRIMITIVE"
+        mat_rdpq.combiner.rgb_D_0 = "0"
+        mat_rdpq.combiner.alpha_A_0 = "TEX0"
+        mat_rdpq.combiner.alpha_B_0 = "0"
+        mat_rdpq.combiner.alpha_C_0 = "PRIMITIVE"
+        mat_rdpq.combiner.alpha_D_0 = "0"
+        mat_rdpq.combiner.rgb_A_1 = "0"
+        mat_rdpq.combiner.rgb_B_1 = "0"
+        mat_rdpq.combiner.rgb_C_1 = "0"
+        mat_rdpq.combiner.rgb_D_1 = "COMBINED"
+        mat_rdpq.combiner.alpha_A_1 = "0"
+        mat_rdpq.combiner.alpha_B_1 = "0"
+        mat_rdpq.combiner.alpha_C_1 = "0"
+        mat_rdpq.combiner.alpha_D_1 = "COMBINED"
+    elif mat_rdpq.combiner.preset == "TEX_SHADE":
+        # TODO handle mipmapping / custom image formats and fog
+        mat_rdpq.combiner.rgb_A_0 = "TEX0"
+        mat_rdpq.combiner.rgb_B_0 = "0"
+        mat_rdpq.combiner.rgb_C_0 = "SHADE"
+        mat_rdpq.combiner.rgb_D_0 = "0"
+        mat_rdpq.combiner.alpha_A_0 = "TEX0"
+        mat_rdpq.combiner.alpha_B_0 = "0"
+        mat_rdpq.combiner.alpha_C_0 = "SHADE"
+        mat_rdpq.combiner.alpha_D_0 = "0"
+        mat_rdpq.combiner.rgb_A_1 = "0"
+        mat_rdpq.combiner.rgb_B_1 = "0"
+        mat_rdpq.combiner.rgb_C_1 = "0"
+        mat_rdpq.combiner.rgb_D_1 = "COMBINED"
+        mat_rdpq.combiner.alpha_A_1 = "0"
+        mat_rdpq.combiner.alpha_B_1 = "0"
+        mat_rdpq.combiner.alpha_C_1 = "0"
+        mat_rdpq.combiner.alpha_D_1 = "COMBINED"
+
+
 class RDPQMaterialCombinerProperties(bpy.types.PropertyGroup):
     preset: bpy.props.EnumProperty(
         name="Combiner Preset",
@@ -422,6 +517,7 @@ class RDPQMaterialCombinerProperties(bpy.types.PropertyGroup):
             ("CUSTOM_2_PASSES", "Custom 2 Passes", ""),
         ),
         default="TEX",
+        update=on_update_combiner_preset,
     )
 
     rgb_A_0: bpy.props.EnumProperty(
