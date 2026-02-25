@@ -210,202 +210,207 @@ class RDPQMaterialTextureProperties(bpy.types.PropertyGroup):
         return self.t_
 
 
-# https://n64brew.dev/wiki/Reality_Display_Processor/Commands?oldid=5601#0x3C_-_Set_Combine_Mode
-rgb_A_inputs_items = (
-    ("COMBINED", "COMBINED", "Combined color from first cycle"),
-    (
-        "TEX0",
-        "TEX0",
-        "Texture color sampled from the tile set in the primitive command, after texture LOD if enabled",
-    ),
-    (
-        "TEX1",
-        "TEX1",
-        "Texture color sampled from the tile set in the primitive command, after texture LOD if enabled, plus one (mod 8, e.g. if TEX0 refers to tile 7, TEX1 refers to tile 0)",
-    ),
-    ("PRIMITIVE", "PRIMITIVE", "Primitive color register (rgb)"),
-    ("SHADE", "SHADE", "Shade color interpolated per-pixel from shade coefficients"),
-    ("ENVIRONMENT", "ENVIRONMENT", "Environment color register (rgb)"),
-    ("1", "1", "Fixed 1"),
-    (
-        "NOISE",
-        "NOISE",
-        "Per-pixel noise. This is a 9-bit value whose top 3 bits are random, while the bottom 6 are fixed to 0b100000 (0x20).",
-    ),
-    ("0", "0", "Fixed 0"),
+# One-cycle combiner slots
+
+COMB1_RGB_SUBA_ITEMS = (
+    ("TEX0", "TEX0", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("1", "1", ""),
+    ("NOISE", "NOISE", ""),
+    ("0", "0", ""),
 )
-rgb_B_inputs_items = (
-    ("COMBINED", "COMBINED", "Combined color from first cycle"),
-    (
-        "TEX0",
-        "TEX0",
-        "Texture color sampled from the tile set in the primitive command, after texture LOD if enabled",
-    ),
-    (
-        "TEX1",
-        "TEX1",
-        "Texture color sampled from the tile set in the primitive command, after texture LOD if enabled, plus one (mod 8, e.g. if TEX0 refers to tile 7, TEX1 refers to tile 0)",
-    ),
-    ("PRIMITIVE", "PRIMITIVE", "Primitive color register (rgb)"),
-    ("SHADE", "SHADE", "Shade color interpolated per-pixel from shade coefficients"),
-    ("ENVIRONMENT", "ENVIRONMENT", "Environment color register (rgb)"),
-    ("CENTER", "CENTER", "Chroma key center (see Set Key R and Set Key GB)"),
-    ("K4", "K4", "K4 value (see Set Convert)"),
-    ("0", "0", "Fixed 0"),
+COMB1_RGB_SUBB_ITEMS = (
+    ("TEX0", "TEX0", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("KEYCENTER", "KEYCENTER", ""),
+    ("K4", "K4", ""),
+    ("0", "0", ""),
 )
-rgb_C_inputs_items = (
-    ("COMBINED", "COMBINED", "Combined color from first cycle"),
-    (
-        "TEX0",
-        "TEX0",
-        "Texture color sampled from the tile set in the primitive command, after texture LOD if enabled",
-    ),
-    (
-        "TEX1",
-        "TEX1",
-        "Texture color sampled from the tile set in the primitive command, after texture LOD if enabled, plus one (mod 8, e.g. if TEX0 refers to tile 7, TEX1 refers to tile 0)",
-    ),
-    ("PRIMITIVE", "PRIMITIVE", "Primitive color register (rgb)"),
-    ("SHADE", "SHADE", "Shade color interpolated per-pixel from shade coefficients"),
-    ("ENVIRONMENT", "ENVIRONMENT", "Environment color register (rgb)"),
-    ("SCALE", "SCALE", "Chroma key scale (see Set Key R and Set Key GB)"),
-    ("COMBINED_ALPHA", "COMBINED_ALPHA", "Combined alpha from first cycle"),
-    (
-        "TEX0_ALPHA",
-        "TEX0_ALPHA",
-        "Texture alpha sampled from the tile set in the primitive command, after texture LOD if enabled",
-    ),
-    (
-        "TEX1_ALPHA",
-        "TEX1_ALPHA",
-        "Texture alpha sampled from the tile set in the primitive command, after texture LOD if enabled, plus one",
-    ),
-    ("PRIMITIVE_ALPHA", "PRIMITIVE_ALPHA", "Primitive color register (alpha)"),
-    (
-        "SHADE_ALPHA",
-        "SHADE_ALPHA",
-        "Shade alpha interpolated per-pixel from shade coefficients",
-    ),
-    ("ENVIRONMENT_ALPHA", "ENVIRONMENT_ALPHA", "Environment color register (alpha)"),
-    ("LOD_FRACTION", "LOD_FRACTION", "LOD Fraction computed as part of Texture LOD"),
-    (
-        "PRIM_LOD_FRAC",
-        "PRIM_LOD_FRAC",
-        "Primitive LOD Fraction (see Set Primitive Color)",
-    ),
-    ("K5", "K5", "K5 value (see Set Convert)"),
-    ("0", "0", "Fixed 0"),
+COMB1_RGB_MUL_ITEMS = (
+    ("TEX0", "TEX0", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("KEYSCALE", "KEYSCALE", ""),
+    ("TEX0_ALPHA", "TEX0_ALPHA", ""),
+    ("PRIM_ALPHA", "PRIM_ALPHA", ""),
+    ("SHADE_ALPHA", "SHADE_ALPHA", ""),
+    ("ENV_ALPHA", "ENV_ALPHA", ""),
+    ("LOD_FRAC", "LOD_FRAC", ""),
+    ("PRIM_LOD_FRAC", "PRIM_LOD_FRAC", ""),
+    ("K5", "K5", ""),
+    ("0", "0", ""),
 )
-rgb_D_inputs_items = (
-    ("COMBINED", "COMBINED", "Combined color from first cycle"),
-    (
-        "TEX0",
-        "TEX0",
-        "Texture color sampled from the tile set in the primitive command, after texture LOD if enabled",
-    ),
-    (
-        "TEX1",
-        "TEX1",
-        "Texture color sampled from the tile set in the primitive command, after texture LOD if enabled, plus one (mod 8, e.g. if TEX0 refers to tile 7, TEX1 refers to tile 0)",
-    ),
-    ("PRIMITIVE", "PRIMITIVE", "Primitive color register (rgb)"),
-    ("SHADE", "SHADE", "Shade color interpolated per-pixel from shade coefficients"),
-    ("ENVIRONMENT", "ENVIRONMENT", "Environment color register (rgb)"),
-    ("1", "1", "Fixed 1"),
-    ("0", "0", "Fixed 0"),
+COMB1_RGB_ADD_ITEMS = (
+    ("TEX0", "TEX0", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("1", "1", ""),
+    ("0", "0", ""),
 )
 
-alpha_A_inputs_items = (
-    ("COMBINED", "COMBINED", "Combined alpha from first cycle"),
-    (
-        "TEX0",
-        "TEX0",
-        "Texture alpha sampled from the tile set in the primitive command, after texture LOD if enabled",
-    ),
-    (
-        "TEX1",
-        "TEX1",
-        "Texture alpha sampled from the tile set in the primitive command, after texture LOD if enabled, plus one (mod 8, e.g. if TEX0 refers to tile 7, TEX1 refers to tile 0)",
-    ),
-    ("PRIMITIVE", "PRIMITIVE", "Primitive color register (alpha)"),
-    ("SHADE", "SHADE", "Shade alpha interpolated per-pixel from shade coefficients"),
-    ("ENVIRONMENT", "ENVIRONMENT", "Environment color register (alpha)"),
-    ("1", "1", "Fixed 1"),
-    ("0", "0", "Fixed 0"),
+COMB1_ALPHA_ADDSUB_ITEMS = (
+    ("TEX0", "TEX0", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("1", "1", ""),
+    ("0", "0", ""),
 )
-alpha_B_inputs_items = (
-    ("COMBINED", "COMBINED", "Combined alpha from first cycle"),
-    (
-        "TEX0",
-        "TEX0",
-        "Texture alpha sampled from the tile set in the primitive command, after texture LOD if enabled",
-    ),
-    (
-        "TEX1",
-        "TEX1",
-        "Texture alpha sampled from the tile set in the primitive command, after texture LOD if enabled, plus one (mod 8, e.g. if TEX0 refers to tile 7, TEX1 refers to tile 0)",
-    ),
-    ("PRIMITIVE", "PRIMITIVE", "Primitive color register (alpha)"),
-    ("SHADE", "SHADE", "Shade alpha interpolated per-pixel from shade coefficients"),
-    ("ENVIRONMENT", "ENVIRONMENT", "Environment color register (alpha)"),
-    ("1", "1", "Fixed 1"),
-    ("0", "0", "Fixed 0"),
-)
-alpha_C_inputs_items = (
-    ("LOD_FRACTION", "LOD_FRACTION", "LOD Fraction computed as part of Texture LOD"),
-    (
-        "TEX0",
-        "TEX0",
-        "Texture alpha sampled from the tile set in the primitive command, after texture LOD if enabled",
-    ),
-    (
-        "TEX1",
-        "TEX1",
-        "Texture alpha sampled from the tile set in the primitive command, after texture LOD if enabled, plus one (mod 8, e.g. if TEX0 refers to tile 7, TEX1 refers to tile 0)",
-    ),
-    ("PRIMITIVE", "PRIMITIVE", "Primitive color register (alpha)"),
-    ("SHADE", "SHADE", "Shade alpha interpolated per-pixel from shade coefficients"),
-    ("ENVIRONMENT", "ENVIRONMENT", "Environment color register (alpha)"),
-    (
-        "PRIM_LOD_FRAC",
-        "PRIM_LOD_FRAC",
-        "Primitive LOD Fraction (see Set Primitive Color)",
-    ),
-    ("0", "0", "Fixed 0"),
-)
-alpha_D_inputs_items = (
-    ("COMBINED", "COMBINED", "Combined alpha from first cycle"),
-    (
-        "TEX0",
-        "TEX0",
-        "Texture alpha sampled from the tile set in the primitive command, after texture LOD if enabled",
-    ),
-    (
-        "TEX1",
-        "TEX1",
-        "Texture alpha sampled from the tile set in the primitive command, after texture LOD if enabled, plus one (mod 8, e.g. if TEX0 refers to tile 7, TEX1 refers to tile 0)",
-    ),
-    ("PRIMITIVE", "PRIMITIVE", "Primitive color register (alpha)"),
-    ("SHADE", "SHADE", "Shade alpha interpolated per-pixel from shade coefficients"),
-    ("ENVIRONMENT", "ENVIRONMENT", "Environment color register (alpha)"),
-    ("1", "1", "Fixed 1"),
-    ("0", "0", "Fixed 0"),
+COMB1_ALPHA_MUL_ITEMS = (
+    ("LOD_FRAC", "LOD_FRAC", ""),
+    ("TEX0", "TEX0", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("PRIM_LOD_FRAC", "PRIM_LOD_FRAC", ""),
+    ("0", "0", ""),
 )
 
+# Two-cycle combiner slots
 
-def combiner_items(items: Iterable[tuple[str, str, str]], cycle: Literal[0, 1]):
-    new_items: list[tuple[str, str, str]] = []
-    for id, name, desc in items:
-        if cycle == 0 and id in {"COMBINED", "COMBINED_ALPHA"}:
-            continue
-        if cycle == 1 and id == "TEX0":
-            id = "TEX1"
-            name = "TEX1"
-        elif cycle == 1 and id == "TEX1":
-            id = "TEX0_BUG"
-            name = "TEX0_BUG"
-        new_items.append((id, name, desc))
-    return new_items
+COMB2A_RGB_SUBA_ITEMS = (
+    ("TEX0", "TEX0", ""),
+    ("TEX1", "TEX1", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("1", "1", ""),
+    ("NOISE", "NOISE", ""),
+    ("0", "0", ""),
+)
+COMB2A_RGB_SUBB_ITEMS = (
+    ("TEX0", "TEX0", ""),
+    ("TEX1", "TEX1", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("KEYCENTER", "KEYCENTER", ""),
+    ("K4", "K4", ""),
+    ("0", "0", ""),
+)
+COMB2A_RGB_MUL_ITEMS = (
+    ("TEX0", "TEX0", ""),
+    ("TEX1", "TEX1", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("KEYSCALE", "KEYSCALE", ""),
+    ("TEX0_ALPHA", "TEX0_ALPHA", ""),
+    ("TEX1_ALPHA", "TEX1_ALPHA", ""),
+    ("PRIM_ALPHA", "PRIM_ALPHA", ""),
+    ("SHADE_ALPHA", "SHADE_ALPHA", ""),
+    ("ENV_ALPHA", "ENV_ALPHA", ""),
+    ("LOD_FRAC", "LOD_FRAC", ""),
+    ("PRIM_LOD_FRAC", "PRIM_LOD_FRAC", ""),
+    ("K5", "K5", ""),
+    ("0", "0", ""),
+)
+COMB2A_RGB_ADD_ITEMS = (
+    ("TEX0", "TEX0", ""),
+    ("TEX1", "TEX1", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("1", "1", ""),
+    ("0", "0", ""),
+)
+
+COMB2A_ALPHA_ADDSUB_ITEMS = (
+    ("TEX0", "TEX0", ""),
+    ("TEX1", "TEX1", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("1", "1", ""),
+    ("0", "0", ""),
+)
+COMB2A_ALPHA_MUL_ITEMS = (
+    ("LOD_FRAC", "LOD_FRAC", ""),
+    ("TEX0", "TEX0", ""),
+    ("TEX1", "TEX1", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("PRIM_LOD_FRAC", "PRIM_LOD_FRAC", ""),
+    ("0", "0", ""),
+)
+
+COMB2B_RGB_SUBA_ITEMS = (
+    ("COMBINED", "COMBINED", ""),
+    ("TEX1", "TEX1", ""),
+    ("TEX0_BUG", "TEX0_BUG", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("1", "1", ""),
+    ("NOISE", "NOISE", ""),
+    ("0", "0", ""),
+)
+COMB2B_RGB_SUBB_ITEMS = (
+    ("COMBINED", "COMBINED", ""),
+    ("TEX1", "TEX1", ""),
+    ("TEX0_BUG", "TEX0_BUG", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("KEYCENTER", "KEYCENTER", ""),
+    ("K4", "K4", ""),
+    ("0", "0", ""),
+)
+COMB2B_RGB_MUL_ITEMS = (
+    ("COMBINED", "COMBINED", ""),
+    ("TEX1", "TEX1", ""),
+    ("TEX0_BUG", "TEX0_BUG", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("KEYSCALE", "KEYSCALE", ""),
+    ("COMBINED_ALPHA", "COMBINED_ALPHA", ""),
+    ("TEX1_ALPHA", "TEX1_ALPHA", ""),
+    ("TEX0_ALPHA", "TEX0_ALPHA", ""),
+    ("PRIM_ALPHA", "PRIM_ALPHA", ""),
+    ("SHADE_ALPHA", "SHADE_ALPHA", ""),
+    ("ENV_ALPHA", "ENV_ALPHA", ""),
+    ("LOD_FRAC", "LOD_FRAC", ""),
+    ("PRIM_LOD_FRAC", "PRIM_LOD_FRAC", ""),
+    ("K5", "K5", ""),
+    ("0", "0", ""),
+)
+COMB2B_RGB_ADD_ITEMS = (
+    ("COMBINED", "COMBINED", ""),
+    ("TEX1", "TEX1", ""),
+    ("TEX0_BUG", "TEX0_BUG", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("1", "1", ""),
+    ("0", "0", ""),
+)
+
+COMB2B_ALPHA_ADDSUB_ITEMS = (
+    ("COMBINED", "COMBINED", ""),
+    ("TEX1", "TEX1", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("1", "1", ""),
+    ("0", "0", ""),
+)
+COMB2B_ALPHA_MUL_ITEMS = (
+    ("LOD_FRAC", "LOD_FRAC", ""),
+    ("TEX1", "TEX1", ""),
+    ("PRIM", "PRIM", ""),
+    ("SHADE", "SHADE", ""),
+    ("ENV", "ENV", ""),
+    ("PRIM_LOD_FRAC", "PRIM_LOD_FRAC", ""),
+    ("0", "0", ""),
+)
 
 
 def on_update_combiner_preset(self, context: bpy.types.Context):
@@ -413,24 +418,43 @@ def on_update_combiner_preset(self, context: bpy.types.Context):
     assert mat is not None
     mat_rdpq: RDPQMaterialProperties = mat.libdragon_rdpq
     if mat_rdpq.combiner.preset == "FLAT":
+        mat_rdpq.combiner.rgb_A = "0"
+        mat_rdpq.combiner.rgb_B = "0"
+        mat_rdpq.combiner.rgb_C = "0"
+        mat_rdpq.combiner.rgb_D = "PRIM"
+        mat_rdpq.combiner.alpha_A = "0"
+        mat_rdpq.combiner.alpha_B = "0"
+        mat_rdpq.combiner.alpha_C = "0"
+        mat_rdpq.combiner.alpha_D = "PRIM"
+
         mat_rdpq.combiner.rgb_A_0 = "0"
         mat_rdpq.combiner.rgb_B_0 = "0"
         mat_rdpq.combiner.rgb_C_0 = "0"
-        mat_rdpq.combiner.rgb_D_0 = "PRIMITIVE"
+        mat_rdpq.combiner.rgb_D_0 = "PRIM"
         mat_rdpq.combiner.alpha_A_0 = "0"
         mat_rdpq.combiner.alpha_B_0 = "0"
         mat_rdpq.combiner.alpha_C_0 = "0"
-        mat_rdpq.combiner.alpha_D_0 = "PRIMITIVE"
+        mat_rdpq.combiner.alpha_D_0 = "PRIM"
+
         mat_rdpq.combiner.rgb_A_1 = "0"
         mat_rdpq.combiner.rgb_B_1 = "0"
         mat_rdpq.combiner.rgb_C_1 = "0"
-        mat_rdpq.combiner.rgb_D_1 = "PRIMITIVE"
+        mat_rdpq.combiner.rgb_D_1 = "PRIM"
         mat_rdpq.combiner.alpha_A_1 = "0"
         mat_rdpq.combiner.alpha_B_1 = "0"
         mat_rdpq.combiner.alpha_C_1 = "0"
-        mat_rdpq.combiner.alpha_D_1 = "PRIMITIVE"
+        mat_rdpq.combiner.alpha_D_1 = "PRIM"
     elif mat_rdpq.combiner.preset == "SHADE":
         # TODO handle fog
+        mat_rdpq.combiner.rgb_A = "0"
+        mat_rdpq.combiner.rgb_B = "0"
+        mat_rdpq.combiner.rgb_C = "0"
+        mat_rdpq.combiner.rgb_D = "SHADE"
+        mat_rdpq.combiner.alpha_A = "0"
+        mat_rdpq.combiner.alpha_B = "0"
+        mat_rdpq.combiner.alpha_C = "0"
+        mat_rdpq.combiner.alpha_D = "SHADE"
+
         mat_rdpq.combiner.rgb_A_0 = "0"
         mat_rdpq.combiner.rgb_B_0 = "0"
         mat_rdpq.combiner.rgb_C_0 = "0"
@@ -439,6 +463,7 @@ def on_update_combiner_preset(self, context: bpy.types.Context):
         mat_rdpq.combiner.alpha_B_0 = "0"
         mat_rdpq.combiner.alpha_C_0 = "0"
         mat_rdpq.combiner.alpha_D_0 = "SHADE"
+
         mat_rdpq.combiner.rgb_A_1 = "0"
         mat_rdpq.combiner.rgb_B_1 = "0"
         mat_rdpq.combiner.rgb_C_1 = "0"
@@ -449,6 +474,15 @@ def on_update_combiner_preset(self, context: bpy.types.Context):
         mat_rdpq.combiner.alpha_D_1 = "SHADE"
     elif mat_rdpq.combiner.preset == "TEX":
         # TODO handle mipmapping / custom image formats
+        mat_rdpq.combiner.rgb_A = "0"
+        mat_rdpq.combiner.rgb_B = "0"
+        mat_rdpq.combiner.rgb_C = "0"
+        mat_rdpq.combiner.rgb_D = "TEX0"
+        mat_rdpq.combiner.alpha_A = "0"
+        mat_rdpq.combiner.alpha_B = "0"
+        mat_rdpq.combiner.alpha_C = "0"
+        mat_rdpq.combiner.alpha_D = "TEX0"
+
         mat_rdpq.combiner.rgb_A_0 = "0"
         mat_rdpq.combiner.rgb_B_0 = "0"
         mat_rdpq.combiner.rgb_C_0 = "0"
@@ -457,6 +491,7 @@ def on_update_combiner_preset(self, context: bpy.types.Context):
         mat_rdpq.combiner.alpha_B_0 = "0"
         mat_rdpq.combiner.alpha_C_0 = "0"
         mat_rdpq.combiner.alpha_D_0 = "TEX0"
+
         mat_rdpq.combiner.rgb_A_1 = "0"
         mat_rdpq.combiner.rgb_B_1 = "0"
         mat_rdpq.combiner.rgb_C_1 = "0"
@@ -467,14 +502,24 @@ def on_update_combiner_preset(self, context: bpy.types.Context):
         mat_rdpq.combiner.alpha_D_1 = "COMBINED"
     elif mat_rdpq.combiner.preset == "TEX_FLAT":
         # TODO handle mipmapping / custom image formats
+        mat_rdpq.combiner.rgb_A = "TEX0"
+        mat_rdpq.combiner.rgb_B = "0"
+        mat_rdpq.combiner.rgb_C = "PRIM"
+        mat_rdpq.combiner.rgb_D = "0"
+        mat_rdpq.combiner.alpha_A = "TEX0"
+        mat_rdpq.combiner.alpha_B = "0"
+        mat_rdpq.combiner.alpha_C = "PRIM"
+        mat_rdpq.combiner.alpha_D = "0"
+
         mat_rdpq.combiner.rgb_A_0 = "TEX0"
         mat_rdpq.combiner.rgb_B_0 = "0"
-        mat_rdpq.combiner.rgb_C_0 = "PRIMITIVE"
+        mat_rdpq.combiner.rgb_C_0 = "PRIM"
         mat_rdpq.combiner.rgb_D_0 = "0"
         mat_rdpq.combiner.alpha_A_0 = "TEX0"
         mat_rdpq.combiner.alpha_B_0 = "0"
-        mat_rdpq.combiner.alpha_C_0 = "PRIMITIVE"
+        mat_rdpq.combiner.alpha_C_0 = "PRIM"
         mat_rdpq.combiner.alpha_D_0 = "0"
+
         mat_rdpq.combiner.rgb_A_1 = "0"
         mat_rdpq.combiner.rgb_B_1 = "0"
         mat_rdpq.combiner.rgb_C_1 = "0"
@@ -485,6 +530,15 @@ def on_update_combiner_preset(self, context: bpy.types.Context):
         mat_rdpq.combiner.alpha_D_1 = "COMBINED"
     elif mat_rdpq.combiner.preset == "TEX_SHADE":
         # TODO handle mipmapping / custom image formats and fog
+        mat_rdpq.combiner.rgb_A = "TEX0"
+        mat_rdpq.combiner.rgb_B = "0"
+        mat_rdpq.combiner.rgb_C = "SHADE"
+        mat_rdpq.combiner.rgb_D = "0"
+        mat_rdpq.combiner.alpha_A = "TEX0"
+        mat_rdpq.combiner.alpha_B = "0"
+        mat_rdpq.combiner.alpha_C = "SHADE"
+        mat_rdpq.combiner.alpha_D = "0"
+
         mat_rdpq.combiner.rgb_A_0 = "TEX0"
         mat_rdpq.combiner.rgb_B_0 = "0"
         mat_rdpq.combiner.rgb_C_0 = "SHADE"
@@ -493,6 +547,7 @@ def on_update_combiner_preset(self, context: bpy.types.Context):
         mat_rdpq.combiner.alpha_B_0 = "0"
         mat_rdpq.combiner.alpha_C_0 = "SHADE"
         mat_rdpq.combiner.alpha_D_0 = "0"
+
         mat_rdpq.combiner.rgb_A_1 = "0"
         mat_rdpq.combiner.rgb_B_1 = "0"
         mat_rdpq.combiner.rgb_C_1 = "0"
@@ -520,88 +575,138 @@ class RDPQMaterialCombinerProperties(bpy.types.PropertyGroup):
         update=on_update_combiner_preset,
     )
 
+    # One-cycle
+
+    rgb_A: bpy.props.EnumProperty(
+        name="RGB A",
+        description="RGB A Input",
+        items=COMB1_RGB_SUBA_ITEMS,
+    )
+    rgb_B: bpy.props.EnumProperty(
+        name="RGB B",
+        description="RGB B Input",
+        items=COMB1_RGB_SUBB_ITEMS,
+    )
+    rgb_C: bpy.props.EnumProperty(
+        name="RGB C",
+        description="RGB C Input",
+        items=COMB1_RGB_MUL_ITEMS,
+    )
+    rgb_D: bpy.props.EnumProperty(
+        name="RGB D",
+        description="RGB D Input",
+        items=COMB1_RGB_ADD_ITEMS,
+    )
+
+    alpha_A: bpy.props.EnumProperty(
+        name="Alpha A",
+        description="RGB A Input",
+        items=COMB1_ALPHA_ADDSUB_ITEMS,
+    )
+    alpha_B: bpy.props.EnumProperty(
+        name="Alpha B",
+        description="RGB B Input",
+        items=COMB1_ALPHA_ADDSUB_ITEMS,
+    )
+    alpha_C: bpy.props.EnumProperty(
+        name="Alpha C",
+        description="RGB C Input",
+        items=COMB1_ALPHA_MUL_ITEMS,
+    )
+    alpha_D: bpy.props.EnumProperty(
+        name="Alpha D",
+        description="RGB D Input",
+        items=COMB1_ALPHA_ADDSUB_ITEMS,
+    )
+
+    # Two-cycle
+
+    # First Cycle
+
     rgb_A_0: bpy.props.EnumProperty(
         name="RGB A 1",
         description="RGB A Input (First Cycle)",
-        items=combiner_items(rgb_A_inputs_items, 0),
+        items=COMB2A_RGB_SUBA_ITEMS,
     )
     rgb_B_0: bpy.props.EnumProperty(
         name="RGB B 1",
         description="RGB B Input (First Cycle)",
-        items=combiner_items(rgb_B_inputs_items, 0),
+        items=COMB2A_RGB_SUBB_ITEMS,
     )
     rgb_C_0: bpy.props.EnumProperty(
         name="RGB C 1",
         description="RGB C Input (First Cycle)",
-        items=combiner_items(rgb_C_inputs_items, 0),
+        items=COMB2A_RGB_MUL_ITEMS,
     )
     rgb_D_0: bpy.props.EnumProperty(
         name="RGB D 1",
         description="RGB D Input (First Cycle)",
-        items=combiner_items(rgb_D_inputs_items, 0),
+        items=COMB2A_RGB_ADD_ITEMS,
     )
 
     alpha_A_0: bpy.props.EnumProperty(
         name="Alpha A 1",
-        description="RGB A Input (First Cycle)",
-        items=combiner_items(alpha_A_inputs_items, 0),
+        description="Alpha A Input (First Cycle)",
+        items=COMB2A_ALPHA_ADDSUB_ITEMS,
     )
     alpha_B_0: bpy.props.EnumProperty(
         name="Alpha B 1",
-        description="RGB B Input (First Cycle)",
-        items=combiner_items(alpha_B_inputs_items, 0),
+        description="Alpha B Input (First Cycle)",
+        items=COMB2A_ALPHA_ADDSUB_ITEMS,
     )
     alpha_C_0: bpy.props.EnumProperty(
         name="Alpha C 1",
-        description="RGB C Input (First Cycle)",
-        items=combiner_items(alpha_C_inputs_items, 0),
+        description="Alpha C Input (First Cycle)",
+        items=COMB2A_ALPHA_MUL_ITEMS,
     )
     alpha_D_0: bpy.props.EnumProperty(
         name="Alpha D 1",
-        description="RGB D Input (First Cycle)",
-        items=combiner_items(alpha_D_inputs_items, 0),
+        description="Alpha D Input (First Cycle)",
+        items=COMB2A_ALPHA_ADDSUB_ITEMS,
     )
+
+    # Second Cycle
 
     rgb_A_1: bpy.props.EnumProperty(
         name="RGB A 2",
         description="RGB A Input (Second Cycle)",
-        items=combiner_items(rgb_A_inputs_items, 1),
+        items=COMB2B_RGB_SUBA_ITEMS,
     )
     rgb_B_1: bpy.props.EnumProperty(
         name="RGB B 2",
         description="RGB B Input (Second Cycle)",
-        items=combiner_items(rgb_B_inputs_items, 1),
+        items=COMB2B_RGB_SUBB_ITEMS,
     )
     rgb_C_1: bpy.props.EnumProperty(
         name="RGB C 2",
         description="RGB C Input (Second Cycle)",
-        items=combiner_items(rgb_C_inputs_items, 1),
+        items=COMB2B_RGB_MUL_ITEMS,
     )
     rgb_D_1: bpy.props.EnumProperty(
         name="RGB D 2",
         description="RGB D Input (Second Cycle)",
-        items=combiner_items(rgb_D_inputs_items, 1),
+        items=COMB2B_RGB_ADD_ITEMS,
     )
 
     alpha_A_1: bpy.props.EnumProperty(
         name="Alpha A 2",
-        description="RGB A Input (Second Cycle)",
-        items=combiner_items(alpha_A_inputs_items, 1),
+        description="Alpha A Input (Second Cycle)",
+        items=COMB2B_ALPHA_ADDSUB_ITEMS,
     )
     alpha_B_1: bpy.props.EnumProperty(
         name="Alpha B 2",
-        description="RGB B Input (Second Cycle)",
-        items=combiner_items(alpha_B_inputs_items, 1),
+        description="Alpha B Input (Second Cycle)",
+        items=COMB2B_ALPHA_ADDSUB_ITEMS,
     )
     alpha_C_1: bpy.props.EnumProperty(
         name="Alpha C 2",
-        description="RGB C Input (Second Cycle)",
-        items=combiner_items(alpha_C_inputs_items, 1),
+        description="Alpha C Input (Second Cycle)",
+        items=COMB2B_ALPHA_MUL_ITEMS,
     )
     alpha_D_1: bpy.props.EnumProperty(
         name="Alpha D 2",
-        description="RGB D Input (Second Cycle)",
-        items=combiner_items(alpha_D_inputs_items, 1),
+        description="Alpha D Input (Second Cycle)",
+        items=COMB2B_ALPHA_ADDSUB_ITEMS,
     )
 
 
@@ -1012,9 +1117,9 @@ BLENDER_MUXES_FAST64_MAP = {
 COMBINER_0_MUXES_FAST64_MAP = {
     "TEX0": "TEXEL0",
     "TEX1": "TEXEL1",
-    "PRIMITIVE": "PRIMITIVE",
+    "PRIM": "PRIMITIVE",
     "SHADE": "SHADE",
-    "ENVIRONMENT": "ENVIRONMENT",
+    "ENV": "ENVIRONMENT",
     "1": "1",
     "NOISE": "NOISE",
     "0": "0",
@@ -1023,9 +1128,9 @@ COMBINER_0_MUXES_FAST64_MAP = {
     "SCALE": "SCALE",
     "TEX0_ALPHA": "TEXEL0_ALPHA",
     "TEX1_ALPHA": "TEXEL1_ALPHA",
-    "PRIMITIVE_ALPHA": "PRIMITIVE_ALPHA",
+    "PRIM_ALPHA": "PRIMITIVE_ALPHA",
     "SHADE_ALPHA": "SHADE_ALPHA",
-    "ENVIRONMENT_ALPHA": "ENV_ALPHA",
+    "ENV_ALPHA": "ENV_ALPHA",
     "LOD_FRACTION": "LOD_FRACTION",
     "PRIM_LOD_FRAC": "PRIM_LOD_FRAC",
     "K5": "K5",
@@ -1276,6 +1381,14 @@ LIBDRAGON_RDPQ_PROPS_LIST = RecursivePropsList(
                 "combiner": RecursivePropsList(
                     (
                         "preset",
+                        "rgb_A",
+                        "rgb_B",
+                        "rgb_C",
+                        "rgb_D",
+                        "alpha_A",
+                        "alpha_B",
+                        "alpha_C",
+                        "alpha_D",
                         "rgb_A_0",
                         "rgb_B_0",
                         "rgb_C_0",
@@ -1534,7 +1647,16 @@ class RDPQMaterialPanel(bpy.types.Panel):
 
         box = layout.box()
         prop_split(box, mat_rdpq.combiner, "preset")
-        if mat_rdpq.combiner.preset in {"CUSTOM_1_PASS", "CUSTOM_2_PASSES"}:
+        if mat_rdpq.combiner.preset == "CUSTOM_1_PASS":
+            box.prop(mat_rdpq.combiner, "rgb_A")
+            box.prop(mat_rdpq.combiner, "rgb_B")
+            box.prop(mat_rdpq.combiner, "rgb_C")
+            box.prop(mat_rdpq.combiner, "rgb_D")
+            box.prop(mat_rdpq.combiner, "alpha_A")
+            box.prop(mat_rdpq.combiner, "alpha_B")
+            box.prop(mat_rdpq.combiner, "alpha_C")
+            box.prop(mat_rdpq.combiner, "alpha_D")
+        if mat_rdpq.combiner.preset == "CUSTOM_2_PASSES":
             box.prop(mat_rdpq.combiner, "rgb_A_0")
             box.prop(mat_rdpq.combiner, "rgb_B_0")
             box.prop(mat_rdpq.combiner, "rgb_C_0")
@@ -1543,7 +1665,6 @@ class RDPQMaterialPanel(bpy.types.Panel):
             box.prop(mat_rdpq.combiner, "alpha_B_0")
             box.prop(mat_rdpq.combiner, "alpha_C_0")
             box.prop(mat_rdpq.combiner, "alpha_D_0")
-        if mat_rdpq.combiner.preset == "CUSTOM_2_PASSES":
             box.prop(mat_rdpq.combiner, "rgb_A_1")
             box.prop(mat_rdpq.combiner, "rgb_B_1")
             box.prop(mat_rdpq.combiner, "rgb_C_1")
