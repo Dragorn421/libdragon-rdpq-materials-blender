@@ -149,11 +149,6 @@ class RDPQMaterialTextureAxisProperties(bpy.types.PropertyGroup):
 
 
 class RDPQMaterialTextureProperties(bpy.types.PropertyGroup):
-    use_texture: bpy.props.BoolProperty(
-        name="Use Texture",
-        description="",
-        default=True,
-    )
     use_placeholder: bpy.props.BoolProperty(
         name="Use Placeholder",
         description="",
@@ -1067,7 +1062,18 @@ class RDPQMaterialOverrideRenderModeProperties(bpy.types.PropertyGroup):
 
 
 class RDPQMaterialProperties(bpy.types.PropertyGroup):
-    texture_: bpy.props.PointerProperty(type=RDPQMaterialTextureProperties)
+    use_texture0: bpy.props.BoolProperty(
+        name="Use Texture 0",
+        description="",
+        default=True,
+    )
+    use_texture1: bpy.props.BoolProperty(
+        name="Use Texture 1",
+        description="",
+        default=False,
+    )
+    texture0_: bpy.props.PointerProperty(type=RDPQMaterialTextureProperties)
+    texture1_: bpy.props.PointerProperty(type=RDPQMaterialTextureProperties)
     combiner_: bpy.props.PointerProperty(type=RDPQMaterialCombinerProperties)
     blender_: bpy.props.PointerProperty(type=RDPQMaterialBlenderProperties)
     override_render_mode_: bpy.props.PointerProperty(
@@ -1075,8 +1081,12 @@ class RDPQMaterialProperties(bpy.types.PropertyGroup):
     )
 
     @property
-    def texture(self) -> RDPQMaterialTextureProperties:
-        return self.texture_
+    def texture0(self) -> RDPQMaterialTextureProperties:
+        return self.texture0_
+
+    @property
+    def texture1(self) -> RDPQMaterialTextureProperties:
+        return self.texture1_
 
     @property
     def combiner(self) -> RDPQMaterialCombinerProperties:
@@ -1160,7 +1170,8 @@ def rdpq_material_props_to_fast64_props(
     # Texture
 
     # TODO
-    mat_rdpq.texture
+    mat_rdpq.texture0
+    mat_rdpq.texture1
 
     # TODO handle one-cycle
     mat_fast64.rdp_settings.g_mdsft_cycletype = "G_CYC_2CYCLE"
@@ -1340,44 +1351,39 @@ class RecursivePropsList:
     groups: dict[str, "RecursivePropsList"]
 
 
+LIBDRAGON_RDPQ_TEXTURE_AXIS_PROPS_LIST = RecursivePropsList(
+    (
+        "translate",
+        "scale",
+        "repeats_inf",
+        "repeats",
+        "mirror",
+    ),
+    {},
+)
+LIBDRAGON_RDPQ_TEXTURE_PROPS_LIST = RecursivePropsList(
+    (
+        "use_placeholder",
+        "placeholder",
+        "format",
+        "mipmap",
+        "dithering",
+    ),
+    {
+        "s": LIBDRAGON_RDPQ_TEXTURE_AXIS_PROPS_LIST,
+        "t": LIBDRAGON_RDPQ_TEXTURE_AXIS_PROPS_LIST,
+    },
+)
 LIBDRAGON_RDPQ_PROPS_LIST = RecursivePropsList(
     (),
     {
         "libdragon_rdpq": RecursivePropsList(
-            (),
+            (
+                "use_texture0",
+                "use_texture1",
+            ),
             {
-                "texture": RecursivePropsList(
-                    (
-                        "use_texture",
-                        "use_placeholder",
-                        "placeholder",
-                        "format",
-                        "mipmap",
-                        "dithering",
-                    ),
-                    {
-                        "s": RecursivePropsList(
-                            (
-                                "translate",
-                                "scale",
-                                "repeats_inf",
-                                "repeats",
-                                "mirror",
-                            ),
-                            {},
-                        ),
-                        "t": RecursivePropsList(
-                            (
-                                "translate",
-                                "scale",
-                                "repeats_inf",
-                                "repeats",
-                                "mirror",
-                            ),
-                            {},
-                        ),
-                    },
-                ),
+                "texture0": LIBDRAGON_RDPQ_TEXTURE_PROPS_LIST,
                 "combiner": RecursivePropsList(
                     (
                         "preset",
@@ -1605,45 +1611,55 @@ class RDPQMaterialPanel(bpy.types.Panel):
                     text="Recreate as Fast64 material",
                 )
 
-        box = layout.box()
-        box.prop(mat_rdpq.texture, "use_texture")
-        if mat_rdpq.texture.use_texture:
+        def prop_texture(
+            box: bpy.types.UILayout,
+            texture_props: RDPQMaterialTextureProperties,
+        ):
             row = box.row()
-            row.prop(mat_rdpq.texture, "use_placeholder", text="")
+            row.prop(texture_props, "use_placeholder", text="")
             col = row.column()
-            col.prop(mat_rdpq.texture, "placeholder")
-            col.enabled = mat_rdpq.texture.use_placeholder
-            prop_split(box, mat_rdpq.texture, "format")
-            prop_split(box, mat_rdpq.texture, "mipmap")
-            prop_split(box, mat_rdpq.texture, "dithering")
+            col.prop(texture_props, "placeholder")
+            col.enabled = texture_props.use_placeholder
+            prop_split(box, texture_props, "format")
+            prop_split(box, texture_props, "mipmap")
+            prop_split(box, texture_props, "dithering")
 
             box_s = box.box()
             box_s.label(text="S Properties")
-            box_s.prop(mat_rdpq.texture.s, "translate")
-            box_s.prop(mat_rdpq.texture.s, "scale")
+            box_s.prop(texture_props.s, "translate")
+            box_s.prop(texture_props.s, "scale")
 
             row = box_s.row()
             row.label(text="Repeats")
             col = row.column()
-            col.prop(mat_rdpq.texture.s, "repeats", text="")
-            col.enabled = not mat_rdpq.texture.s.repeats_inf
-            row.prop(mat_rdpq.texture.s, "repeats_inf", text="Infinite")
+            col.prop(texture_props.s, "repeats", text="")
+            col.enabled = not texture_props.s.repeats_inf
+            row.prop(texture_props.s, "repeats_inf", text="Infinite")
 
-            box_s.prop(mat_rdpq.texture.s, "mirror")
+            box_s.prop(texture_props.s, "mirror")
 
             box_t = box.box()
             box_t.label(text="T Properties")
-            box_t.prop(mat_rdpq.texture.t, "translate")
-            box_t.prop(mat_rdpq.texture.t, "scale")
+            box_t.prop(texture_props.t, "translate")
+            box_t.prop(texture_props.t, "scale")
 
             row = box_t.row()
             row.label(text="Repeats")
             col = row.column()
-            col.prop(mat_rdpq.texture.t, "repeats", text="")
-            col.enabled = not mat_rdpq.texture.t.repeats_inf
-            row.prop(mat_rdpq.texture.t, "repeats_inf", text="Infinite")
+            col.prop(texture_props.t, "repeats", text="")
+            col.enabled = not texture_props.t.repeats_inf
+            row.prop(texture_props.t, "repeats_inf", text="Infinite")
 
-            box_t.prop(mat_rdpq.texture.t, "mirror")
+            box_t.prop(texture_props.t, "mirror")
+
+        box = layout.box()
+        box.prop(mat_rdpq, "use_texture0")
+        if mat_rdpq.use_texture0:
+            prop_texture(box, mat_rdpq.texture0)
+            box = layout.box()
+            box.prop(mat_rdpq, "use_texture1")
+            if mat_rdpq.use_texture1:
+                prop_texture(box, mat_rdpq.texture1)
 
         box = layout.box()
         prop_split(box, mat_rdpq.combiner, "preset")
