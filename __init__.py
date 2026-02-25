@@ -9,7 +9,7 @@ bl_info = {
 }
 
 import dataclasses
-from typing import Iterable, Literal, Optional
+from typing import Optional
 
 import bpy
 import bpy.utils
