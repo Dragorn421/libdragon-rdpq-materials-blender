@@ -107,10 +107,14 @@ class RDPQWorldDefaultsProperties(bpy.types.PropertyGroup):
     fixed_z_value: bpy.props.IntProperty(
         name="Fixed Z",
         description="",
+        min=0,
+        max=0x7FFF,
     )
     fixed_z_deltaz: bpy.props.IntProperty(
         name="Fixed Z deltaz",
         description="",
+        min=-32768,
+        max=32767,
     )
 
 
@@ -127,11 +131,15 @@ class RDPQMaterialTextureAxisProperties(bpy.types.PropertyGroup):
         name="Translate",
         description="",
         default=0,
+        min=-1024,
+        max=1024,
     )
     scale: bpy.props.IntProperty(
         name="Scale",
         description="",
         default=0,
+        min=-5,
+        max=10,
     )
     repeats_inf: bpy.props.BoolProperty(
         name="Repeats Infinitely",
@@ -142,6 +150,8 @@ class RDPQMaterialTextureAxisProperties(bpy.types.PropertyGroup):
         name="Repeats",
         description="",
         default=1,
+        min=0,
+        max=1024,
     )
     mirror: bpy.props.BoolProperty(
         name="Mirror",
@@ -173,9 +183,15 @@ class RDPQMaterialTextureProperties(bpy.types.PropertyGroup):
         description="",
         items=(
             ("AUTO", "Auto", ""),
+            ("RGBA16", "RGBA16", ""),
+            ("RGBA32", "RGBA32", ""),
+            ("CI4", "CI4", ""),
+            ("CI8", "CI8", ""),
+            ("IA4", "IA4", ""),
+            ("IA8", "IA8", ""),
+            ("IA16", "IA16", ""),
             ("I4", "I4", ""),
             ("I8", "I8", ""),
-            # TODO fill in
             ("SHQ", "SHQ", ""),
             ("IHQ", "IHQ", ""),
         ),
