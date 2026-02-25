@@ -630,6 +630,51 @@ blender_B_inputs_items = (
 )
 
 
+def on_update_blender_preset(self, context: bpy.types.Context):
+    mat = context.material
+    assert mat is not None
+    mat_rdpq: RDPQMaterialProperties = mat.libdragon_rdpq
+    # TODO handle fog
+    if mat_rdpq.blender.preset == "NONE":
+        # rdpq_mode_blender suggests passing "0 to disable", which corresponds to
+        # RDPQ_BLENDER((IN_RGB, IN_ALPHA, IN_RGB, INV_MUX_ALPHA))
+        mat_rdpq.blender.p_0 = "INPUT"
+        mat_rdpq.blender.a_0 = "INPUT_ALPHA"
+        mat_rdpq.blender.m_0 = "INPUT"
+        mat_rdpq.blender.b_0 = "1_MINUS_A"
+        mat_rdpq.blender.p_1 = "INPUT"
+        mat_rdpq.blender.a_1 = "0"
+        mat_rdpq.blender.m_1 = "INPUT"
+        mat_rdpq.blender.b_1 = "1"
+    elif mat_rdpq.blender.preset == "MULTIPLY":
+        mat_rdpq.blender.p_0 = "INPUT"
+        mat_rdpq.blender.a_0 = "INPUT_ALPHA"
+        mat_rdpq.blender.m_0 = "MEMORY"
+        mat_rdpq.blender.b_0 = "1_MINUS_A"
+        mat_rdpq.blender.p_1 = "INPUT"
+        mat_rdpq.blender.a_1 = "0"
+        mat_rdpq.blender.m_1 = "INPUT"
+        mat_rdpq.blender.b_1 = "1"
+    elif mat_rdpq.blender.preset == "MULTIPLY_CONST":
+        mat_rdpq.blender.p_0 = "INPUT"
+        mat_rdpq.blender.a_0 = "FOG_ALPHA"
+        mat_rdpq.blender.m_0 = "MEMORY"
+        mat_rdpq.blender.b_0 = "1_MINUS_A"
+        mat_rdpq.blender.p_1 = "INPUT"
+        mat_rdpq.blender.a_1 = "0"
+        mat_rdpq.blender.m_1 = "INPUT"
+        mat_rdpq.blender.b_1 = "1"
+    elif mat_rdpq.blender.preset == "ADDITIVE":
+        mat_rdpq.blender.p_0 = "INPUT"
+        mat_rdpq.blender.a_0 = "INPUT_ALPHA"
+        mat_rdpq.blender.m_0 = "MEMORY"
+        mat_rdpq.blender.b_0 = "1"
+        mat_rdpq.blender.p_1 = "INPUT"
+        mat_rdpq.blender.a_1 = "0"
+        mat_rdpq.blender.m_1 = "INPUT"
+        mat_rdpq.blender.b_1 = "1"
+
+
 class RDPQMaterialBlenderProperties(bpy.types.PropertyGroup):
     preset: bpy.props.EnumProperty(
         name="Blender Preset",
@@ -642,6 +687,7 @@ class RDPQMaterialBlenderProperties(bpy.types.PropertyGroup):
             ("CUSTOM_1_PASS", "Custom 1 Pass", ""),
             ("CUSTOM_2_PASSES", "Custom 2 Passes", ""),
         ),
+        update=on_update_blender_preset,
     )
 
     p_0: bpy.props.EnumProperty(
