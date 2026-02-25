@@ -1392,6 +1392,35 @@ def rdpq_material_props_to_fast64_props(
             mat_fast64.rdp_settings.g_mdsft_zsrcsel = "G_ZS_PIXEL"
 
 
+MSGBUS_OWNER = object()
+
+
+def msgbus_sync_rdpq_material_props_to_fast64_props(mat: bpy.types.Material):
+
+    def sync_callback():
+        scene = bpy.context.scene
+        if scene is None:
+            return
+        world = scene.world
+        if world is None:
+            return
+        with bpy.context.temp_override(material=mat):
+            rdpq_material_props_to_fast64_props(mat, world)
+
+    def sync_subscribe(thing: bpy.types.bpy_struct, props_list: RecursivePropsList):
+        for prop_name in props_list.props:
+            bpy.msgbus.subscribe_rna(
+                key=thing.path_resolve(prop_name, False),
+                owner=MSGBUS_OWNER,
+                args=(),
+                notify=sync_callback,
+            )
+        for group_prop_name, group_prop_list in props_list.groups.items():
+            sync_subscribe(getattr(thing, group_prop_name), group_prop_list)
+
+    sync_subscribe(mat, LIBDRAGON_RDPQ_PROPS_LIST)
+
+
 class RDPQMaterialPropsToFast64Operator(bpy.types.Operator):
     bl_idname = "libdragon_rdpq.rdpq_material_props_to_fast64"
     bl_label = "RDPQ properties to Fast64"
@@ -1413,6 +1442,7 @@ class RDPQMaterialPropsToFast64Operator(bpy.types.Operator):
         world = context.scene.world
         assert world is not None
         rdpq_material_props_to_fast64_props(mat, world)
+        msgbus_sync_rdpq_material_props_to_fast64_props(mat)
         return {"FINISHED"}
 
 
