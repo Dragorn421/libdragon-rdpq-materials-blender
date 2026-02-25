@@ -43,6 +43,14 @@ achieve this:
 Note this "Recreate as Fast64 material" will only conserve the libdragon
 RDPQ material properties and no other property of the material.
 
+## glTF extension
+
+This addon includes an extension `EXT_libdragon_rdpq_materials_jmat`
+to the glTF exporter, which adds the libdragon RDPQ material properties
+to the exported materials. This extension is enabled by default.
+
+![Screenshot of the glTF exporter settings with the libdragon RDPQ materials extension enabled](media/gltf_extension.png)
+
 ## Dev Environment
 
 Formatter: black 26
