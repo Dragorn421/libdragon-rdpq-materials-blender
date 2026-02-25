@@ -1067,7 +1067,59 @@ class RDPQMaterialOverrideRenderModeProperties(bpy.types.PropertyGroup):
     )
 
 
+SYNCED_MATERIALS: dict[bpy.types.Material, object] = {}
+
+
+def start_auto_sync_to_fast64(mat: bpy.types.Material):
+    mat_rdpq: RDPQMaterialProperties = mat.libdragon_rdpq
+    assert mat not in SYNCED_MATERIALS
+    owner = object()
+    SYNCED_MATERIALS[mat] = owner
+    try:
+        msgbus_sync_rdpq_material_props_to_fast64_props(owner, mat)
+    except:
+        mat_rdpq.auto_sync_to_fast64 = False
+        raise
+
+
+def on_update_auto_sync_to_fast64(self, context: bpy.types.Context):
+    mat = context.material
+    assert mat is not None
+    mat_rdpq: RDPQMaterialProperties = mat.libdragon_rdpq
+
+    if mat_rdpq.auto_sync_to_fast64:
+        scene = bpy.context.scene
+        assert scene is not None
+        world = scene.world
+        assert world is not None  # Prop is drawn disabled if there is no world
+        start_auto_sync_to_fast64(mat)
+        rdpq_material_props_to_fast64_props(mat, world)
+    else:
+        assert mat in SYNCED_MATERIALS
+        owner = SYNCED_MATERIALS[mat]
+        bpy.msgbus.clear_by_owner(owner)
+        del SYNCED_MATERIALS[mat]
+
+
+@bpy.app.handlers.persistent
+def handler_load_post_start_materials_auto_sync_to_fast64():
+    for mat in bpy.data.materials.values():
+        assert mat is not None
+        mat_rdpq: RDPQMaterialProperties = mat.libdragon_rdpq
+        if mat_rdpq.auto_sync_to_fast64:
+            start_auto_sync_to_fast64(mat)
+
+
 class RDPQMaterialProperties(bpy.types.PropertyGroup):
+    auto_sync_to_fast64: bpy.props.BoolProperty(
+        name="Auto Sync To Fast64",
+        description=(
+            "Automatically set Fast64 material properties"
+            " based on the libdragon RDPQ material properties"
+        ),
+        update=on_update_auto_sync_to_fast64,
+    )
+
     use_texture0: bpy.props.BoolProperty(
         name="Use Texture 0",
         description="",
@@ -1425,11 +1477,13 @@ def rdpq_material_props_to_fast64_props(
     mat_fast64.rdp_settings.g_shade = True
 
 
-MSGBUS_OWNER = object()
 QUEUED_UPDATES = set()
 
 
-def msgbus_sync_rdpq_material_props_to_fast64_props(mat: bpy.types.Material):
+def msgbus_sync_rdpq_material_props_to_fast64_props(
+    owner: object,
+    mat: bpy.types.Material,
+):
 
     def sync_callback():
         if mat in QUEUED_UPDATES:
@@ -1453,7 +1507,7 @@ def msgbus_sync_rdpq_material_props_to_fast64_props(mat: bpy.types.Material):
         for prop_name in props_list.props:
             bpy.msgbus.subscribe_rna(
                 key=thing.path_resolve(prop_name, False),
-                owner=MSGBUS_OWNER,
+                owner=owner,
                 args=(),
                 notify=sync_callback,
             )
@@ -1484,7 +1538,6 @@ class RDPQMaterialPropsToFast64Operator(bpy.types.Operator):
         world = context.scene.world
         assert world is not None
         rdpq_material_props_to_fast64_props(mat, world)
-        msgbus_sync_rdpq_material_props_to_fast64_props(mat)
         return {"FINISHED"}
 
 
@@ -1523,6 +1576,7 @@ LIBDRAGON_RDPQ_PROPS_LIST = RecursivePropsList(
     {
         "libdragon_rdpq": RecursivePropsList(
             (
+                # "auto_sync_to_fast64",  # left out on purpose
                 "use_texture0",
                 "use_texture1",
             ),
@@ -1745,10 +1799,22 @@ class RDPQMaterialPanel(bpy.types.Panel):
 
         if is_fast64_available():
             if is_fast64_material(mat):
-                layout.operator(
-                    RDPQMaterialPropsToFast64Operator.bl_idname,
-                    text="Sync to Fast64 props",
-                )
+                if mat_rdpq.auto_sync_to_fast64:
+                    layout.prop(mat_rdpq, "auto_sync_to_fast64")
+                else:
+                    row = layout.row()
+                    if context.scene is None or context.scene.world is None:
+                        col = row.column()
+                        col.prop(mat_rdpq, "auto_sync_to_fast64")
+                        col.enabled = False
+                    else:
+                        row.prop(mat_rdpq, "auto_sync_to_fast64")
+                    row.operator(
+                        RDPQMaterialPropsToFast64Operator.bl_idname,
+                        text="Sync to Fast64 props",
+                    )
+                    if context.scene is None or context.scene.world is None:
+                        layout.label(text="Scene has no world!", icon="ERROR")
             else:
                 layout.operator(
                     RDPQMaterialRecreateAsFast64Operator.bl_idname,
@@ -1901,9 +1967,21 @@ def register():
         type=RDPQMaterialProperties
     )
     bpy.types.World.libdragon_rdpq = bpy.props.PointerProperty(type=RDPQWorldProperties)
+    bpy.app.handlers.load_post.append(
+        handler_load_post_start_materials_auto_sync_to_fast64
+    )
+    bpy.app.timers.register(
+        lambda: handler_load_post_start_materials_auto_sync_to_fast64()
+    )
 
 
 def unregister():
+    try:
+        bpy.app.handlers.load_post.remove(
+            handler_load_post_start_materials_auto_sync_to_fast64
+        )
+    except ValueError:
+        pass
     del bpy.types.Material.libdragon_rdpq
     del bpy.types.World.libdragon_rdpq
     for cls in reversed(classes):
