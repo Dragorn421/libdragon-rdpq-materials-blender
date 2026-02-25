@@ -605,28 +605,54 @@ class RDPQMaterialCombinerProperties(bpy.types.PropertyGroup):
     )
 
 
-# names and description from https://n64brew.dev/wiki/Reality_Display_Processor/Commands?oldid=5601#0x2F_-_Set_Other_Modes (CC BY-SA 4.0)
-blender_P_M_inputs_items = (
-    (
-        "INPUT",
-        "Input",
-        "First cycle: output color from Color Combiner final stage; Second cycle: output color from first blender cycle",
-    ),
-    ("MEMORY", "Memory", "Memory color from framebuffer"),
-    ("BLEND_COLOR", "Blend Color", "Blend color register RGB"),
-    ("FOG_COLOR", "Fog Color", "Fog color register RGB "),
+BLEND1_A_ITEMS = (
+    ("IN_RGB", "IN_RGB", ""),
+    ("MEMORY_RGB", "MEMORY_RGB", ""),
+    ("BLEND_RGB", "BLEND_RGB", ""),
+    ("FOG_RGB", "FOG_RGB", ""),
 )
-blender_A_inputs_items = (
-    ("INPUT_ALPHA", "Input Alpha", "Output alpha from Color Combiner final stage"),
-    ("FOG_ALPHA", "Fog Alpha", "Fog color register Alpha"),
-    ("SHADE_ALPHA", "Shade Alpha", "Shade Alpha (interpolated per-pixel)"),
-    ("0", "0", "Fixed 0.0"),
+BLEND1_B1_ITEMS = (
+    ("IN_ALPHA", "IN_ALPHA", ""),
+    ("FOG_ALPHA", "FOG_ALPHA", ""),
+    ("SHADE_ALPHA", "SHADE_ALPHA", ""),
+    ("0", "0", ""),
 )
-blender_B_inputs_items = (
-    ("1_MINUS_A", "1 - A", "1.0 - A, where A is the other alpha input"),
-    ("MEMORY_COVERAGE", "Memory Coverage", "Memory coverage from framebuffer"),
-    ("1", "1", "Fixed 1.0"),
-    ("0", "0", "Fixed 0.0"),
+BLEND1_B2_ITEMS = (
+    ("INV_MUX_ALPHA", "INV_MUX_ALPHA", ""),
+    ("MEMORY_CVG", "MEMORY_CVG", ""),
+    ("1", "1", ""),
+    ("0", "0", ""),
+)
+
+BLEND2A_A_ITEMS = (
+    ("IN_RGB", "IN_RGB", ""),
+    ("BLEND_RGB", "BLEND_RGB", ""),
+    ("FOG_RGB", "FOG_RGB", ""),
+)
+BLEND2A_B1_ITEMS = (
+    ("IN_ALPHA", "IN_ALPHA", ""),
+    ("FOG_ALPHA", "FOG_ALPHA", ""),
+    ("SHADE_ALPHA", "SHADE_ALPHA", ""),
+    ("0", "0", ""),
+)
+BLEND2A_B2_ITEMS = (("INV_MUX_ALPHA", "INV_MUX_ALPHA", ""),)
+BLEND2B_A_ITEMS = (
+    ("CYCLE1_RGB", "CYCLE1_RGB", ""),
+    ("MEMORY_RGB", "MEMORY_RGB", ""),
+    ("BLEND_RGB", "BLEND_RGB", ""),
+    ("FOG_RGB", "FOG_RGB", ""),
+)
+BLEND2B_B1_ITEMS = (
+    ("IN_ALPHA", "IN_ALPHA", ""),
+    ("FOG_ALPHA", "FOG_ALPHA", ""),
+    ("SHADE_ALPHA", "SHADE_ALPHA", ""),
+    ("0", "0", ""),
+)
+BLEND2B_B2_ITEMS = (
+    ("INV_MUX_ALPHA", "INV_MUX_ALPHA", ""),
+    ("MEMORY_CVG", "MEMORY_CVG", ""),
+    ("1", "1", ""),
+    ("0", "0", ""),
 )
 
 
@@ -638,40 +664,70 @@ def on_update_blender_preset(self, context: bpy.types.Context):
     if mat_rdpq.blender.preset == "NONE":
         # rdpq_mode_blender suggests passing "0 to disable", which corresponds to
         # RDPQ_BLENDER((IN_RGB, IN_ALPHA, IN_RGB, INV_MUX_ALPHA))
-        mat_rdpq.blender.p_0 = "INPUT"
-        mat_rdpq.blender.a_0 = "INPUT_ALPHA"
-        mat_rdpq.blender.m_0 = "INPUT"
-        mat_rdpq.blender.b_0 = "1_MINUS_A"
-        mat_rdpq.blender.p_1 = "INPUT"
-        mat_rdpq.blender.a_1 = "0"
-        mat_rdpq.blender.m_1 = "INPUT"
-        mat_rdpq.blender.b_1 = "1"
+
+        mat_rdpq.blender.p = "IN_RGB"
+        mat_rdpq.blender.a = "IN_ALPHA"
+        mat_rdpq.blender.q = "IN_RGB"
+        mat_rdpq.blender.b = "INV_MUX_ALPHA"
+
+        mat_rdpq.blender.p_0 = "IN_RGB"
+        mat_rdpq.blender.a_0 = "IN_ALPHA"
+        mat_rdpq.blender.q_0 = "IN_RGB"
+        mat_rdpq.blender.b_0 = "INV_MUX_ALPHA"
+        mat_rdpq.blender.p_1 = "CYCLE1_RGB"
+        mat_rdpq.blender.a_1 = "IN_ALPHA"
+        mat_rdpq.blender.q_1 = "CYCLE1_RGB"
+        mat_rdpq.blender.b_1 = "INV_MUX_ALPHA"
     elif mat_rdpq.blender.preset == "MULTIPLY":
-        mat_rdpq.blender.p_0 = "INPUT"
-        mat_rdpq.blender.a_0 = "INPUT_ALPHA"
-        mat_rdpq.blender.m_0 = "MEMORY"
-        mat_rdpq.blender.b_0 = "1_MINUS_A"
-        mat_rdpq.blender.p_1 = "INPUT"
-        mat_rdpq.blender.a_1 = "0"
-        mat_rdpq.blender.m_1 = "INPUT"
-        mat_rdpq.blender.b_1 = "1"
+        # RDPQ_BLENDER((IN_RGB, IN_ALPHA, MEMORY_RGB, INV_MUX_ALPHA))
+
+        mat_rdpq.blender.p = "IN_RGB"
+        mat_rdpq.blender.a = "IN_ALPHA"
+        mat_rdpq.blender.q = "MEMORY_RGB"
+        mat_rdpq.blender.b = "INV_MUX_ALPHA"
+
+        mat_rdpq.blender.p_0 = "IN_RGB"
+        mat_rdpq.blender.a_0 = "IN_ALPHA"
+        mat_rdpq.blender.q_0 = "IN_RGB"
+        mat_rdpq.blender.b_0 = "INV_MUX_ALPHA"
+
+        mat_rdpq.blender.p_1 = "CYCLE1_RGB"
+        mat_rdpq.blender.a_1 = "IN_ALPHA"
+        mat_rdpq.blender.q_1 = "MEMORY_RGB"
+        mat_rdpq.blender.b_1 = "INV_MUX_ALPHA"
     elif mat_rdpq.blender.preset == "MULTIPLY_CONST":
-        mat_rdpq.blender.p_0 = "INPUT"
-        mat_rdpq.blender.a_0 = "FOG_ALPHA"
-        mat_rdpq.blender.m_0 = "MEMORY"
-        mat_rdpq.blender.b_0 = "1_MINUS_A"
-        mat_rdpq.blender.p_1 = "INPUT"
-        mat_rdpq.blender.a_1 = "0"
-        mat_rdpq.blender.m_1 = "INPUT"
-        mat_rdpq.blender.b_1 = "1"
+        # RDPQ_BLENDER((IN_RGB, FOG_ALPHA, MEMORY_RGB, INV_MUX_ALPHA))
+
+        mat_rdpq.blender.p = "IN_RGB"
+        mat_rdpq.blender.a = "FOG_ALPHA"
+        mat_rdpq.blender.q = "MEMORY_RGB"
+        mat_rdpq.blender.b = "INV_MUX_ALPHA"
+
+        mat_rdpq.blender.p_0 = "IN_RGB"
+        mat_rdpq.blender.a_0 = "IN_ALPHA"
+        mat_rdpq.blender.q_0 = "IN_RGB"
+        mat_rdpq.blender.b_0 = "INV_MUX_ALPHA"
+
+        mat_rdpq.blender.p_1 = "CYCLE1_RGB"
+        mat_rdpq.blender.a_1 = "FOG_ALPHA"
+        mat_rdpq.blender.q_1 = "MEMORY_RGB"
+        mat_rdpq.blender.b_1 = "INV_MUX_ALPHA"
     elif mat_rdpq.blender.preset == "ADDITIVE":
-        mat_rdpq.blender.p_0 = "INPUT"
-        mat_rdpq.blender.a_0 = "INPUT_ALPHA"
-        mat_rdpq.blender.m_0 = "MEMORY"
-        mat_rdpq.blender.b_0 = "1"
-        mat_rdpq.blender.p_1 = "INPUT"
-        mat_rdpq.blender.a_1 = "0"
-        mat_rdpq.blender.m_1 = "INPUT"
+        # RDPQ_BLENDER((IN_RGB, IN_ALPHA, MEMORY_RGB, ONE))
+
+        mat_rdpq.blender.p = "IN_RGB"
+        mat_rdpq.blender.a = "IN_ALPHA"
+        mat_rdpq.blender.q = "MEMORY_RGB"
+        mat_rdpq.blender.b = "1"
+
+        mat_rdpq.blender.p_0 = "IN_RGB"
+        mat_rdpq.blender.a_0 = "IN_ALPHA"
+        mat_rdpq.blender.q_0 = "IN_RGB"
+        mat_rdpq.blender.b_0 = "INV_MUX_ALPHA"
+
+        mat_rdpq.blender.p_1 = "CYCLE1_RGB"
+        mat_rdpq.blender.a_1 = "IN_ALPHA"
+        mat_rdpq.blender.q_1 = "MEMORY_RGB"
         mat_rdpq.blender.b_1 = "1"
 
 
@@ -690,46 +746,70 @@ class RDPQMaterialBlenderProperties(bpy.types.PropertyGroup):
         update=on_update_blender_preset,
     )
 
+    # One-cycle muxes
+    p: bpy.props.EnumProperty(
+        name="P",
+        description="Blender input P",
+        items=BLEND1_A_ITEMS,
+    )
+    a: bpy.props.EnumProperty(
+        name="A",
+        description="Blender input A (first cycle)",
+        items=BLEND1_B1_ITEMS,
+    )
+    q: bpy.props.EnumProperty(
+        name="Q",
+        description="Blender input Q (first cycle)",
+        items=BLEND1_A_ITEMS,
+    )
+    b: bpy.props.EnumProperty(
+        name="B",
+        description="Blender input B (first cycle)",
+        items=BLEND1_B2_ITEMS,
+    )
+
+    # Two-cycle muxes
+    # First cycle
     p_0: bpy.props.EnumProperty(
         name="P1",
         description="Blender input P (first cycle)",
-        items=blender_P_M_inputs_items,
+        items=BLEND2A_A_ITEMS,
     )
     a_0: bpy.props.EnumProperty(
         name="A1",
         description="Blender input A (first cycle)",
-        items=blender_A_inputs_items,
+        items=BLEND2A_B1_ITEMS,
     )
-    m_0: bpy.props.EnumProperty(
-        name="M1",
-        description="Blender input M (first cycle)",
-        items=blender_P_M_inputs_items,
+    q_0: bpy.props.EnumProperty(
+        name="Q1",
+        description="Blender input Q (first cycle)",
+        items=BLEND2A_A_ITEMS,
     )
     b_0: bpy.props.EnumProperty(
         name="B1",
         description="Blender input B (first cycle)",
-        items=blender_B_inputs_items,
+        items=BLEND2A_B2_ITEMS,
     )
-
+    # Second cycle
     p_1: bpy.props.EnumProperty(
         name="P2",
         description="Blender input P (second cycle)",
-        items=blender_P_M_inputs_items,
+        items=BLEND2B_A_ITEMS,
     )
     a_1: bpy.props.EnumProperty(
         name="A2",
         description="Blender input A (second cycle)",
-        items=blender_A_inputs_items,
+        items=BLEND2B_B1_ITEMS,
     )
-    m_1: bpy.props.EnumProperty(
-        name="M2",
-        description="Blender input M (second cycle)",
-        items=blender_P_M_inputs_items,
+    q_1: bpy.props.EnumProperty(
+        name="Q2",
+        description="Blender input Q (second cycle)",
+        items=BLEND2B_A_ITEMS,
     )
     b_1: bpy.props.EnumProperty(
         name="B2",
         description="Blender input B (second cycle)",
-        items=blender_B_inputs_items,
+        items=BLEND2B_B2_ITEMS,
     )
 
     blend_color: bpy.props.FloatVectorProperty(
@@ -915,15 +995,16 @@ def is_fast64_material(mat: bpy.types.Material):
 
 
 BLENDER_MUXES_FAST64_MAP = {
-    "INPUT": "G_BL_CLR_IN",
-    "MEMORY": "G_BL_CLR_MEM",
-    "BLEND_COLOR": "G_BL_CLR_BL",
-    "FOG_COLOR": "G_BL_CLR_FOG",
-    "INPUT_ALPHA": "G_BL_A_IN",
+    "IN_RGB": "G_BL_CLR_IN",
+    "CYCLE1_RGB": "G_BL_CLR_IN",
+    "MEMORY_RGB": "G_BL_CLR_MEM",
+    "BLEND_RGB": "G_BL_CLR_BL",
+    "FOG_RGB": "G_BL_CLR_FOG",
+    "IN_ALPHA": "G_BL_A_IN",
     "FOG_ALPHA": "G_BL_A_FOG",
     "SHADE_ALPHA": "G_BL_A_SHADE",
-    "1_MINUS_A": "G_BL_1MA",
-    "MEMORY_COVERAGE": "G_BL_A_MEM",
+    "INV_MUX_ALPHA": "G_BL_1MA",
+    "MEMORY_CVG": "G_BL_A_MEM",
     "1": "G_BL_1",
     "0": "G_BL_0",
 }
@@ -1023,14 +1104,16 @@ def rdpq_material_props_to_fast64_props(
 
     # Blender
 
+    # TODO handle one-cycle props
+
     mat_fast64.rdp_settings.blend_p1 = BLENDER_MUXES_FAST64_MAP[mat_rdpq.blender.p_0]
     mat_fast64.rdp_settings.blend_a1 = BLENDER_MUXES_FAST64_MAP[mat_rdpq.blender.a_0]
-    mat_fast64.rdp_settings.blend_m1 = BLENDER_MUXES_FAST64_MAP[mat_rdpq.blender.m_0]
+    mat_fast64.rdp_settings.blend_m1 = BLENDER_MUXES_FAST64_MAP[mat_rdpq.blender.q_0]
     mat_fast64.rdp_settings.blend_b1 = BLENDER_MUXES_FAST64_MAP[mat_rdpq.blender.b_0]
 
     mat_fast64.rdp_settings.blend_p2 = BLENDER_MUXES_FAST64_MAP[mat_rdpq.blender.p_1]
     mat_fast64.rdp_settings.blend_a2 = BLENDER_MUXES_FAST64_MAP[mat_rdpq.blender.a_1]
-    mat_fast64.rdp_settings.blend_m2 = BLENDER_MUXES_FAST64_MAP[mat_rdpq.blender.m_1]
+    mat_fast64.rdp_settings.blend_m2 = BLENDER_MUXES_FAST64_MAP[mat_rdpq.blender.q_1]
     mat_fast64.rdp_settings.blend_b2 = BLENDER_MUXES_FAST64_MAP[mat_rdpq.blender.b_1]
 
     # blend_color is set below
@@ -1215,13 +1298,17 @@ LIBDRAGON_RDPQ_PROPS_LIST = RecursivePropsList(
                 "blender": RecursivePropsList(
                     (
                         "preset",
+                        "p",
+                        "a",
+                        "q",
+                        "b",
                         "p_0",
                         "a_0",
-                        "m_0",
+                        "q_0",
                         "b_0",
                         "p_1",
                         "a_1",
-                        "m_1",
+                        "q_1",
                         "b_1",
                         "blend_color",
                         "fog_color",
@@ -1468,15 +1555,19 @@ class RDPQMaterialPanel(bpy.types.Panel):
 
         box = layout.box()
         prop_split(box, mat_rdpq.blender, "preset")
-        if mat_rdpq.blender.preset in {"CUSTOM_1_PASS", "CUSTOM_2_PASSES"}:
+        if mat_rdpq.blender.preset == "CUSTOM_1_PASS":
+            box.prop(mat_rdpq.blender, "p")
+            box.prop(mat_rdpq.blender, "a")
+            box.prop(mat_rdpq.blender, "q")
+            box.prop(mat_rdpq.blender, "b")
+        if mat_rdpq.blender.preset == "CUSTOM_2_PASSES":
             box.prop(mat_rdpq.blender, "p_0")
             box.prop(mat_rdpq.blender, "a_0")
-            box.prop(mat_rdpq.blender, "m_0")
+            box.prop(mat_rdpq.blender, "q_0")
             box.prop(mat_rdpq.blender, "b_0")
-        if mat_rdpq.blender.preset == "CUSTOM_2_PASSES":
             box.prop(mat_rdpq.blender, "p_1")
             box.prop(mat_rdpq.blender, "a_1")
-            box.prop(mat_rdpq.blender, "m_1")
+            box.prop(mat_rdpq.blender, "q_1")
             box.prop(mat_rdpq.blender, "b_1")
         prop_split(box, mat_rdpq.blender, "blend_color")
         prop_split(box, mat_rdpq.blender, "fog_color")
