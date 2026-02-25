@@ -593,11 +593,11 @@ class RDPQMaterialBlenderProperties(bpy.types.PropertyGroup):
     blend_color: bpy.props.FloatVectorProperty(
         name="Blend Color",
         description="",
-        default=(1, 1, 1, 1),
+        default=(1, 1, 1),
         min=0,
         max=1,
         subtype="COLOR",
-        size=4,
+        size=3,
     )
     fog_color: bpy.props.FloatVectorProperty(
         name="Fog Color",
@@ -843,8 +843,7 @@ def rdpq_material_props_to_fast64_props(
     mat_fast64.rdp_settings.blend_m2 = BLENDER_MUXES_FAST64_MAP[mat_rdpq.blender.m_1]
     mat_fast64.rdp_settings.blend_b2 = BLENDER_MUXES_FAST64_MAP[mat_rdpq.blender.b_1]
 
-    mat_fast64.set_blend = True
-    mat_fast64.blend_color = mat_rdpq.blender.blend_color
+    # blend_color is set below
     mat_fast64.set_fog = True
     mat_fast64.fog_color = mat_rdpq.blender.fog_color
 
@@ -899,7 +898,12 @@ def rdpq_material_props_to_fast64_props(
         else:
             mat_fast64.rdp_settings.g_mdsft_alpha_compare = "G_AC_NONE"
             alpha_compare_threshold = None
-    # TODO do something with alpha_compare_threshold
+
+    mat_fast64.set_blend = True
+    mat_fast64.blend_color = (
+        *mat_rdpq.blender.blend_color,
+        1 if alpha_compare_threshold is None else (alpha_compare_threshold / 255),
+    )
 
     mat_fast64.rdp_settings.z_cmp = (
         mat_rdpq.override_render_mode.z_compare
