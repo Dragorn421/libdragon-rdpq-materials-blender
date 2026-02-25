@@ -1426,19 +1426,28 @@ def rdpq_material_props_to_fast64_props(
 
 
 MSGBUS_OWNER = object()
+QUEUED_UPDATES = set()
 
 
 def msgbus_sync_rdpq_material_props_to_fast64_props(mat: bpy.types.Material):
 
     def sync_callback():
+        if mat in QUEUED_UPDATES:
+            return
         scene = bpy.context.scene
         if scene is None:
             return
         world = scene.world
         if world is None:
             return
-        with bpy.context.temp_override(material=mat):
-            rdpq_material_props_to_fast64_props(mat, world)
+
+        def delayed_callback():
+            QUEUED_UPDATES.discard(mat)
+            with bpy.context.temp_override(material=mat):
+                rdpq_material_props_to_fast64_props(mat, world)
+
+        QUEUED_UPDATES.add(mat)
+        bpy.app.timers.register(delayed_callback, first_interval=0.2)
 
     def sync_subscribe(thing: bpy.types.bpy_struct, props_list: RecursivePropsList):
         for prop_name in props_list.props:
