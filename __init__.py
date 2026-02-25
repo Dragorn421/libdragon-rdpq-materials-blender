@@ -9,10 +9,115 @@ bl_info = {
 }
 
 import dataclasses
-from typing import Iterable, Literal
+from typing import Iterable, Literal, Optional
 
 import bpy
 import bpy.utils
+
+
+class RDPQWorldDefaultsProperties(bpy.types.PropertyGroup):
+    antialias: bpy.props.EnumProperty(
+        name="Antialias",
+        description="",
+        items=(
+            ("NONE", "None", ""),
+            ("STANDARD", "Standard", ""),
+            ("REDUCED", "Reduced", ""),
+        ),
+        default="STANDARD",
+    )
+    fog: bpy.props.EnumProperty(
+        name="Fog",
+        description="",
+        items=(
+            ("NONE", "None", ""),
+            ("STANDARD", "Standard", ""),
+            ("CUSTOM", "Custom", ""),
+        ),
+        default="STANDARD",
+    )
+    dithering: bpy.props.EnumProperty(
+        name="Dithering",
+        description="",
+        items=(
+            ("RGB_SQUARE_A_SQUARE", "rgb=SQUARE alpha=SQUARE", ""),
+            ("RGB_SQUARE_A_INVSQUARE", "rgb=SQUARE alpha=INVSQUARE", ""),
+            ("RGB_SQUARE_A_NOISE", "rgb=SQUARE alpha=NOISE", ""),
+            ("RGB_SQUARE_A_NONE", "rgb=SQUARE alpha=NONE", ""),
+            ("RGB_BAYER_A_BAYER", "rgb=BAYER alpha=BAYER", ""),
+            ("RGB_BAYER_A_INVBAYER", "rgb=BAYER alpha=INVBAYER", ""),
+            ("RGB_BAYER_A_NOISE", "rgb=BAYER alpha=NOISE", ""),
+            ("RGB_BAYER_A_NONE", "rgb=BAYER alpha=NONE", ""),
+            ("RGB_NOISE_A_SQUARE", "rgb=NOISE alpha=SQUARE", ""),
+            ("RGB_NOISE_A_INVSQUARE", "rgb=NOISE alpha=INVSQUARE", ""),
+            ("RGB_NOISE_A_NOISE", "rgb=NOISE alpha=NOISE", ""),
+            ("RGB_NOISE_A_NONE", "rgb=NOISE alpha=NONE", ""),
+            ("RGB_NONE_A_BAYER", "rgb=NONE alpha=BAYER", ""),
+            ("RGB_NONE_A_INVBAYER", "rgb=NONE alpha=INVBAYER", ""),
+            ("RGB_NONE_A_NOISE", "rgb=NONE alpha=NOISE", ""),
+            ("RGB_NONE_A_NONE", "rgb=NONE alpha=NONE", ""),
+        ),
+    )
+    texture_filtering: bpy.props.EnumProperty(
+        name="Texture Filtering",
+        description="",
+        items=(
+            ("POINT", "Point", ""),
+            ("BILINEAR", "Bilinear", ""),
+            ("MEDIAN", "Median", ""),
+        ),
+        default="BILINEAR",
+    )
+    texture_perspective_correction: bpy.props.BoolProperty(
+        name="Texture Perspective Correction",
+        description="",
+        default=True,
+    )
+
+    alpha_compare: bpy.props.BoolProperty(
+        name="Alpha Compare",
+        description="",
+        default=False,
+    )
+    alpha_compare_threshold: bpy.props.IntProperty(
+        name="Alpha Compare Threshold",
+        description="",
+        default=127,
+        min=0,
+        max=255,
+    )
+
+    z_compare: bpy.props.BoolProperty(
+        name="Z Compare",
+        description="",
+        default=True,
+    )
+    z_update: bpy.props.BoolProperty(
+        name="Z Update",
+        description="",
+        default=True,
+    )
+
+    fixed_z: bpy.props.BoolProperty(
+        name="Fixed Z",
+        description="",
+    )
+    fixed_z_value: bpy.props.IntProperty(
+        name="Fixed Z",
+        description="",
+    )
+    fixed_z_deltaz: bpy.props.IntProperty(
+        name="Fixed Z deltaz",
+        description="",
+    )
+
+
+class RDPQWorldProperties(bpy.types.PropertyGroup):
+    defaults_: bpy.props.PointerProperty(type=RDPQWorldDefaultsProperties)
+
+    @property
+    def defaults(self) -> RDPQWorldDefaultsProperties:
+        return self.defaults_
 
 
 class RDPQMaterialTextureAxisProperties(bpy.types.PropertyGroup):
@@ -682,9 +787,15 @@ BLENDER_MUXES_FAST64_MAP = {
 }
 
 
-def rdpq_material_props_to_fast64_props(mat: bpy.types.Material):
+def rdpq_material_props_to_fast64_props(
+    mat: bpy.types.Material, world: Optional[bpy.types.World]
+):
+    if world is None:
+        raise NotImplementedError()  # TODO
+
     mat_rdpq: RDPQMaterialProperties = mat.libdragon_rdpq
     mat_fast64 = mat.f3d_mat
+    world_rdpq: RDPQWorldProperties = world.libdragon_rdpq
 
     # Texture
 
@@ -742,22 +853,66 @@ def rdpq_material_props_to_fast64_props(mat: bpy.types.Material):
     # TODO all "override" props should check for the override_* bool props
     # and default to a world default if not overriden
 
-    mat_rdpq.override_render_mode.antialias  # TODO
-    mat_rdpq.override_render_mode.fog  # TODO
+    # TODO
+    if mat_rdpq.override_render_mode.override_antialias:
+        mat_rdpq.override_render_mode.antialias
+    else:
+        world_rdpq.defaults.antialias
+
+    # TODO
+    if mat_rdpq.override_render_mode.override_fog:
+        mat_rdpq.override_render_mode.fog
+    else:
+        world_rdpq.defaults.fog
+
     mat_rdpq.override_render_mode.dithering  # TODO
+
     mat_fast64.rdp_settings.g_mdsft_text_filt = {
         "POINT": "G_TF_POINT",
         "BILINEAR": "G_TF_BILERP",
         "MEDIAN": "G_TF_AVERAGE",
-    }[mat_rdpq.override_render_mode.texture_filtering]
+    }[
+        (
+            mat_rdpq.override_render_mode.texture_filtering
+            if mat_rdpq.override_render_mode.override_texture_filtering
+            else world_rdpq.defaults.texture_filtering
+        )
+    ]
+
     mat_fast64.rdp_settings.g_mdsft_textpersp = (
         "G_TP_PERSP"
-        if mat_rdpq.override_render_mode.texture_perspective_correction
+        if (
+            mat_rdpq.override_render_mode.texture_perspective_correction
+            if mat_rdpq.override_render_mode.override_texture_perspective_correction
+            else world_rdpq.defaults.texture_perspective_correction
+        )
         else "G_TP_NONE"
     )
-    mat_rdpq.override_render_mode.alpha_compare_threshold  # TODO
-    mat_fast64.rdp_settings.z_cmp = mat_rdpq.override_render_mode.z_compare
-    mat_fast64.rdp_settings.z_upd = mat_rdpq.override_render_mode.z_update
+
+    if mat_rdpq.override_render_mode.override_alpha_compare:
+        mat_fast64.rdp_settings.g_mdsft_alpha_compare = "G_AC_THRESHOLD"
+        alpha_compare_threshold = mat_rdpq.override_render_mode.alpha_compare_threshold
+    else:
+        if world_rdpq.defaults.alpha_compare:
+            mat_fast64.rdp_settings.g_mdsft_alpha_compare = "G_AC_THRESHOLD"
+            alpha_compare_threshold = world_rdpq.defaults.alpha_compare_threshold
+        else:
+            mat_fast64.rdp_settings.g_mdsft_alpha_compare = "G_AC_NONE"
+            alpha_compare_threshold = None
+    # TODO do something with alpha_compare_threshold
+
+    mat_fast64.rdp_settings.z_cmp = (
+        mat_rdpq.override_render_mode.z_compare
+        if mat_rdpq.override_render_mode.override_z_compare
+        else world_rdpq.defaults.z_compare
+    )
+
+    mat_fast64.rdp_settings.z_upd = (
+        mat_rdpq.override_render_mode.z_update
+        if mat_rdpq.override_render_mode.override_z_update
+        else world_rdpq.defaults.z_update
+    )
+
     if mat_rdpq.override_render_mode.override_fixed_z:
         mat_fast64.rdp_settings.g_mdsft_zsrcsel = "G_ZS_PRIM"
         mat_fast64.rdp_settings.prim_depth.z = mat_rdpq.override_render_mode.fixed_z
@@ -765,7 +920,12 @@ def rdpq_material_props_to_fast64_props(mat: bpy.types.Material):
             mat_rdpq.override_render_mode.fixed_z_deltaz
         )
     else:
-        mat_fast64.rdp_settings.g_mdsft_zsrcsel = "G_ZS_PIXEL"
+        if world_rdpq.defaults.fixed_z:
+            mat_fast64.rdp_settings.g_mdsft_zsrcsel = "G_ZS_PRIM"
+            mat_fast64.rdp_settings.prim_depth.z = world_rdpq.defaults.fixed_z_value
+            mat_fast64.rdp_settings.prim_depth.dz = world_rdpq.defaults.fixed_z_deltaz
+        else:
+            mat_fast64.rdp_settings.g_mdsft_zsrcsel = "G_ZS_PIXEL"
 
 
 class RDPQMaterialPropsToFast64Operator(bpy.types.Operator):
@@ -778,12 +938,17 @@ class RDPQMaterialPropsToFast64Operator(bpy.types.Operator):
             hasattr(context, "material")
             and context.material is not None
             and is_fast64_material(context.material)
+            and context.scene is not None
+            and context.scene.world is not None
         )
 
     def execute(self, context):
         mat = context.material
         assert mat is not None
-        rdpq_material_props_to_fast64_props(mat)
+        assert context.scene is not None
+        world = context.scene.world
+        assert world is not None
+        rdpq_material_props_to_fast64_props(mat, world)
         return {"FINISHED"}
 
 
@@ -913,7 +1078,9 @@ def rdpq_material_copy_props(
     copy_props(from_mat, to_mat, LIBDRAGON_RDPQ_PROPS_LIST)
 
 
-def rdpq_material_recreate_as_fast64(mat: bpy.types.Material):
+def rdpq_material_recreate_as_fast64(
+    mat: bpy.types.Material, world: Optional[bpy.types.World]
+):
     # Create a fast64 material and find it
     keys_before = set(bpy.data.materials.keys())
     bpy.ops.object.create_f3d_mat()
@@ -926,7 +1093,7 @@ def rdpq_material_recreate_as_fast64(mat: bpy.types.Material):
 
     # Transfer properties from mat to new_mat and to fast64 properties
     rdpq_material_copy_props(mat, new_mat)
-    rdpq_material_props_to_fast64_props(new_mat)
+    rdpq_material_props_to_fast64_props(new_mat, world)
 
     # Replace mat with new_mat in all slots where mat is used
     for obj in bpy.data.objects:
@@ -949,12 +1116,20 @@ class RDPQMaterialRecreateAsFast64Operator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return hasattr(context, "material") and context.material is not None
+        return (
+            hasattr(context, "material")
+            and context.material is not None
+            and context.scene is not None
+            and context.scene.world is not None
+        )
 
     def execute(self, context):
         mat = context.material
         assert mat is not None
-        rdpq_material_recreate_as_fast64(mat)
+        assert context.scene is not None
+        world = context.scene.world
+        assert world is not None
+        rdpq_material_recreate_as_fast64(mat, world)
         return {"FINISHED"}
 
 
@@ -963,6 +1138,47 @@ def prop_split(layout: bpy.types.UILayout, data, prop_name: str):
     layout.use_property_decorate = False
     layout.prop(data, prop_name)
     layout.use_property_split = False
+
+
+class RDPQWorldPanel(bpy.types.Panel):
+    bl_label = "RDPQ Defaults"
+    bl_idname = "WORLD_PT_libdragon_rdpq"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "world"
+
+    @classmethod
+    def poll(cls, context):
+        return context.world is not None
+
+    def draw(self, context):
+        layout = self.layout
+        assert layout is not None
+        world = context.world
+        assert world is not None
+        world_rdpq: RDPQWorldProperties = world.libdragon_rdpq
+
+        layout.prop(world_rdpq.defaults, "antialias")
+        layout.prop(world_rdpq.defaults, "fog")
+        layout.prop(world_rdpq.defaults, "dithering")
+        layout.prop(world_rdpq.defaults, "texture_filtering")
+        layout.prop(world_rdpq.defaults, "texture_perspective_correction")
+
+        row = layout.row()
+        row.prop(world_rdpq.defaults, "alpha_compare", text="")
+        col = row.column()
+        col.prop(world_rdpq.defaults, "alpha_compare_threshold")
+        col.enabled = world_rdpq.defaults.alpha_compare
+
+        layout.prop(world_rdpq.defaults, "z_compare")
+        layout.prop(world_rdpq.defaults, "z_update")
+
+        row = layout.row()
+        row.prop(world_rdpq.defaults, "fixed_z")
+        col = row.column()
+        col.prop(world_rdpq.defaults, "fixed_z_value")
+        col.prop(world_rdpq.defaults, "fixed_z_deltaz")
+        col.enabled = world_rdpq.defaults.fixed_z
 
 
 class RDPQMaterialPanel(bpy.types.Panel):
@@ -1095,6 +1311,8 @@ class RDPQMaterialPanel(bpy.types.Panel):
 
 
 classes = (
+    RDPQWorldDefaultsProperties,
+    RDPQWorldProperties,
     RDPQMaterialTextureAxisProperties,
     RDPQMaterialTextureProperties,
     RDPQMaterialCombinerProperties,
@@ -1103,6 +1321,7 @@ classes = (
     RDPQMaterialProperties,
     RDPQMaterialPropsToFast64Operator,
     RDPQMaterialRecreateAsFast64Operator,
+    RDPQWorldPanel,
     RDPQMaterialPanel,
 )
 
@@ -1113,9 +1332,11 @@ def register():
     bpy.types.Material.libdragon_rdpq = bpy.props.PointerProperty(
         type=RDPQMaterialProperties
     )
+    bpy.types.World.libdragon_rdpq = bpy.props.PointerProperty(type=RDPQWorldProperties)
 
 
 def unregister():
     del bpy.types.Material.libdragon_rdpq
+    del bpy.types.World.libdragon_rdpq
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
