@@ -9,6 +9,7 @@ bl_info = {
 }
 
 import dataclasses
+from typing import Iterable, Literal
 
 import bpy
 import bpy.utils
@@ -287,6 +288,21 @@ alpha_D_inputs_items = (
 )
 
 
+def combiner_items(items: Iterable[tuple[str, str, str]], cycle: Literal[0, 1]):
+    new_items: list[tuple[str, str, str]] = []
+    for id, name, desc in items:
+        if cycle == 0 and id in {"COMBINED", "COMBINED_ALPHA"}:
+            continue
+        if cycle == 1 and id == "TEX0":
+            id = "TEX1"
+            name = "TEX1"
+        elif cycle == 1 and id == "TEX1":
+            id = "TEX0_BUG"
+            name = "TEX0_BUG"
+        new_items.append((id, name, desc))
+    return new_items
+
+
 class RDPQMaterialCombinerProperties(bpy.types.PropertyGroup):
     preset: bpy.props.EnumProperty(
         name="Combiner Preset",
@@ -306,85 +322,85 @@ class RDPQMaterialCombinerProperties(bpy.types.PropertyGroup):
     rgb_A_0: bpy.props.EnumProperty(
         name="RGB A 1",
         description="RGB A Input (First Cycle)",
-        items=rgb_A_inputs_items,
+        items=combiner_items(rgb_A_inputs_items, 0),
     )
     rgb_B_0: bpy.props.EnumProperty(
         name="RGB B 1",
         description="RGB B Input (First Cycle)",
-        items=rgb_B_inputs_items,
+        items=combiner_items(rgb_B_inputs_items, 0),
     )
     rgb_C_0: bpy.props.EnumProperty(
         name="RGB C 1",
         description="RGB C Input (First Cycle)",
-        items=rgb_C_inputs_items,
+        items=combiner_items(rgb_C_inputs_items, 0),
     )
     rgb_D_0: bpy.props.EnumProperty(
         name="RGB D 1",
         description="RGB D Input (First Cycle)",
-        items=rgb_D_inputs_items,
+        items=combiner_items(rgb_D_inputs_items, 0),
     )
 
     alpha_A_0: bpy.props.EnumProperty(
         name="Alpha A 1",
         description="RGB A Input (First Cycle)",
-        items=alpha_A_inputs_items,
+        items=combiner_items(alpha_A_inputs_items, 0),
     )
     alpha_B_0: bpy.props.EnumProperty(
         name="Alpha B 1",
         description="RGB B Input (First Cycle)",
-        items=alpha_B_inputs_items,
+        items=combiner_items(alpha_B_inputs_items, 0),
     )
     alpha_C_0: bpy.props.EnumProperty(
         name="Alpha C 1",
         description="RGB C Input (First Cycle)",
-        items=alpha_C_inputs_items,
+        items=combiner_items(alpha_C_inputs_items, 0),
     )
     alpha_D_0: bpy.props.EnumProperty(
         name="Alpha D 1",
         description="RGB D Input (First Cycle)",
-        items=alpha_D_inputs_items,
+        items=combiner_items(alpha_D_inputs_items, 0),
     )
 
     rgb_A_1: bpy.props.EnumProperty(
         name="RGB A 2",
         description="RGB A Input (Second Cycle)",
-        items=rgb_A_inputs_items,
+        items=combiner_items(rgb_A_inputs_items, 1),
     )
     rgb_B_1: bpy.props.EnumProperty(
         name="RGB B 2",
         description="RGB B Input (Second Cycle)",
-        items=rgb_B_inputs_items,
+        items=combiner_items(rgb_B_inputs_items, 1),
     )
     rgb_C_1: bpy.props.EnumProperty(
         name="RGB C 2",
         description="RGB C Input (Second Cycle)",
-        items=rgb_C_inputs_items,
+        items=combiner_items(rgb_C_inputs_items, 1),
     )
     rgb_D_1: bpy.props.EnumProperty(
         name="RGB D 2",
         description="RGB D Input (Second Cycle)",
-        items=rgb_D_inputs_items,
+        items=combiner_items(rgb_D_inputs_items, 1),
     )
 
     alpha_A_1: bpy.props.EnumProperty(
         name="Alpha A 2",
         description="RGB A Input (Second Cycle)",
-        items=alpha_A_inputs_items,
+        items=combiner_items(alpha_A_inputs_items, 1),
     )
     alpha_B_1: bpy.props.EnumProperty(
         name="Alpha B 2",
         description="RGB B Input (Second Cycle)",
-        items=alpha_B_inputs_items,
+        items=combiner_items(alpha_B_inputs_items, 1),
     )
     alpha_C_1: bpy.props.EnumProperty(
         name="Alpha C 2",
         description="RGB C Input (Second Cycle)",
-        items=alpha_C_inputs_items,
+        items=combiner_items(alpha_C_inputs_items, 1),
     )
     alpha_D_1: bpy.props.EnumProperty(
         name="Alpha D 2",
         description="RGB D Input (Second Cycle)",
-        items=alpha_D_inputs_items,
+        items=combiner_items(alpha_D_inputs_items, 1),
     )
 
 
