@@ -786,6 +786,38 @@ BLENDER_MUXES_FAST64_MAP = {
     "0": "G_BL_0",
 }
 
+COMBINER_0_MUXES_FAST64_MAP = {
+    "TEX0": "TEXEL0",
+    "TEX1": "TEXEL1",
+    "PRIMITIVE": "PRIMITIVE",
+    "SHADE": "SHADE",
+    "ENVIRONMENT": "ENVIRONMENT",
+    "1": "1",
+    "NOISE": "NOISE",
+    "0": "0",
+    "CENTER": "CENTER",
+    "K4": "K4",
+    "SCALE": "SCALE",
+    "TEX0_ALPHA": "TEXEL0_ALPHA",
+    "TEX1_ALPHA": "TEXEL1_ALPHA",
+    "PRIMITIVE_ALPHA": "PRIMITIVE_ALPHA",
+    "SHADE_ALPHA": "SHADE_ALPHA",
+    "ENVIRONMENT_ALPHA": "ENV_ALPHA",
+    "LOD_FRACTION": "LOD_FRACTION",
+    "PRIM_LOD_FRAC": "PRIM_LOD_FRAC",
+    "K5": "K5",
+}
+COMBINER_1_MUXES_FAST64_MAP = COMBINER_0_MUXES_FAST64_MAP.copy()
+del COMBINER_1_MUXES_FAST64_MAP["TEX0"]
+del COMBINER_1_MUXES_FAST64_MAP["TEX1"]
+COMBINER_1_MUXES_FAST64_MAP.update(
+    {
+        "COMBINED": "COMBINED",
+        "TEX0_BUG": "TEXEL1",
+        "TEX1": "TEXEL0",
+    }
+)
+
 
 def rdpq_material_props_to_fast64_props(
     mat: bpy.types.Material, world: Optional[bpy.types.World]
@@ -811,25 +843,41 @@ def rdpq_material_props_to_fast64_props(
 
     # Combiner
 
-    mat_fast64.combiner1.A = mat_rdpq.combiner.rgb_A_0
-    mat_fast64.combiner1.B = mat_rdpq.combiner.rgb_B_0
-    mat_fast64.combiner1.C = mat_rdpq.combiner.rgb_C_0
-    mat_fast64.combiner1.D = mat_rdpq.combiner.rgb_D_0
+    mat_fast64.combiner1.A = COMBINER_0_MUXES_FAST64_MAP[mat_rdpq.combiner.rgb_A_0]
+    mat_fast64.combiner1.B = COMBINER_0_MUXES_FAST64_MAP[mat_rdpq.combiner.rgb_B_0]
+    mat_fast64.combiner1.C = COMBINER_0_MUXES_FAST64_MAP[mat_rdpq.combiner.rgb_C_0]
+    mat_fast64.combiner1.D = COMBINER_0_MUXES_FAST64_MAP[mat_rdpq.combiner.rgb_D_0]
 
-    mat_fast64.combiner1.A_alpha = mat_rdpq.combiner.alpha_A_0
-    mat_fast64.combiner1.B_alpha = mat_rdpq.combiner.alpha_B_0
-    mat_fast64.combiner1.C_alpha = mat_rdpq.combiner.alpha_C_0
-    mat_fast64.combiner1.D_alpha = mat_rdpq.combiner.alpha_D_0
+    mat_fast64.combiner1.A_alpha = COMBINER_0_MUXES_FAST64_MAP[
+        mat_rdpq.combiner.alpha_A_0
+    ]
+    mat_fast64.combiner1.B_alpha = COMBINER_0_MUXES_FAST64_MAP[
+        mat_rdpq.combiner.alpha_B_0
+    ]
+    mat_fast64.combiner1.C_alpha = COMBINER_0_MUXES_FAST64_MAP[
+        mat_rdpq.combiner.alpha_C_0
+    ]
+    mat_fast64.combiner1.D_alpha = COMBINER_0_MUXES_FAST64_MAP[
+        mat_rdpq.combiner.alpha_D_0
+    ]
 
-    mat_fast64.combiner2.A = mat_rdpq.combiner.rgb_A_1
-    mat_fast64.combiner2.B = mat_rdpq.combiner.rgb_B_1
-    mat_fast64.combiner2.C = mat_rdpq.combiner.rgb_C_1
-    mat_fast64.combiner2.D = mat_rdpq.combiner.rgb_D_1
+    mat_fast64.combiner2.A = COMBINER_1_MUXES_FAST64_MAP[mat_rdpq.combiner.rgb_A_1]
+    mat_fast64.combiner2.B = COMBINER_1_MUXES_FAST64_MAP[mat_rdpq.combiner.rgb_B_1]
+    mat_fast64.combiner2.C = COMBINER_1_MUXES_FAST64_MAP[mat_rdpq.combiner.rgb_C_1]
+    mat_fast64.combiner2.D = COMBINER_1_MUXES_FAST64_MAP[mat_rdpq.combiner.rgb_D_1]
 
-    mat_fast64.combiner2.A_alpha = mat_rdpq.combiner.alpha_A_1
-    mat_fast64.combiner2.B_alpha = mat_rdpq.combiner.alpha_B_1
-    mat_fast64.combiner2.C_alpha = mat_rdpq.combiner.alpha_C_1
-    mat_fast64.combiner2.D_alpha = mat_rdpq.combiner.alpha_D_1
+    mat_fast64.combiner2.A_alpha = COMBINER_1_MUXES_FAST64_MAP[
+        mat_rdpq.combiner.alpha_A_1
+    ]
+    mat_fast64.combiner2.B_alpha = COMBINER_1_MUXES_FAST64_MAP[
+        mat_rdpq.combiner.alpha_B_1
+    ]
+    mat_fast64.combiner2.C_alpha = COMBINER_1_MUXES_FAST64_MAP[
+        mat_rdpq.combiner.alpha_C_1
+    ]
+    mat_fast64.combiner2.D_alpha = COMBINER_1_MUXES_FAST64_MAP[
+        mat_rdpq.combiner.alpha_D_1
+    ]
 
     # Blender
 
