@@ -9,6 +9,7 @@ bl_info = {
 }
 
 import dataclasses
+import math
 from typing import Optional
 
 import bpy
@@ -160,6 +161,11 @@ class RDPQMaterialTextureProperties(bpy.types.PropertyGroup):
         default=1,
         min=1,
         max=15,
+    )
+    image: bpy.props.PointerProperty(
+        type=bpy.types.Image,
+        name="Image",
+        description="",
     )
     format: bpy.props.EnumProperty(
         name="Format",
@@ -1157,6 +1163,14 @@ COMBINER_1_MUXES_FAST64_MAP.update(
 )
 
 
+def intlog2(v: int):
+    r = round(math.log2(v))
+    if 2**r == v:
+        return r
+    else:
+        return None
+
+
 def rdpq_material_props_to_fast64_props(
     mat: bpy.types.Material, world: Optional[bpy.types.World]
 ):
@@ -1169,9 +1183,66 @@ def rdpq_material_props_to_fast64_props(
 
     # Texture
 
-    # TODO
-    mat_rdpq.texture0
-    mat_rdpq.texture1
+    def handle_texture_axis_props(
+        texture_axis_props: RDPQMaterialTextureAxisProperties,
+        tex_axis_fast64_props,
+        image_axis_len: int,
+    ):
+        image_axis_len_intlog2 = intlog2(image_axis_len)
+        tex_axis_fast64_props.clamp = not texture_axis_props.repeats_inf
+        tex_axis_fast64_props.mirror = texture_axis_props.mirror
+        # TODO low and high computation may be wrong
+        translate = texture_axis_props.translate
+        if translate < 0:
+            translate %= image_axis_len
+        tex_axis_fast64_props.low = translate
+        tex_axis_fast64_props.high = (
+            translate
+            + (
+                image_axis_len
+                * (1 if texture_axis_props.repeats_inf else texture_axis_props.repeats)
+            )
+            - 1
+        )
+        # TODO what if dimension is not a power of 2?
+        tex_axis_fast64_props.mask = (
+            0 if image_axis_len_intlog2 is None else image_axis_len_intlog2
+        )
+        tex_axis_fast64_props.shift = texture_axis_props.scale
+
+    def handle_texture_props(
+        texture_props: RDPQMaterialTextureProperties, tex_fast64_props
+    ):
+        tex_fast64_props.tex_set = not texture_props.use_placeholder
+        tex_fast64_props.tex = texture_props.image
+        texture_format = texture_props.format
+        if texture_format == "AUTO":
+            # TODO invoke mksprite to guess a format?
+            texture_format = "RGBA16"
+        if texture_format == "SHQ":
+            # TODO
+            texture_format = "RGBA16"
+        if texture_format == "IHQ":
+            # TODO
+            texture_format = "RGBA16"
+        tex_fast64_props.tex_format = texture_format
+        tex_fast64_props.ci_format = "RGBA16"
+        tex_fast64_props.autoprop = False
+        handle_texture_axis_props(
+            texture_props.s,
+            tex_fast64_props.S,
+            texture_props.image.size[0],
+        )
+        handle_texture_axis_props(
+            texture_props.t,
+            tex_fast64_props.T,
+            texture_props.image.size[1],
+        )
+
+    if mat_rdpq.use_texture0:
+        handle_texture_props(mat_rdpq.texture0, mat_fast64.tex0)
+    if mat_rdpq.use_texture1:
+        handle_texture_props(mat_rdpq.texture1, mat_fast64.tex1)
 
     # TODO handle one-cycle
     mat_fast64.rdp_settings.g_mdsft_cycletype = "G_CYC_2CYCLE"
@@ -1365,6 +1436,7 @@ LIBDRAGON_RDPQ_TEXTURE_PROPS_LIST = RecursivePropsList(
     (
         "use_placeholder",
         "placeholder",
+        "image",
         "format",
         "mipmap",
         "dithering",
@@ -1620,6 +1692,8 @@ class RDPQMaterialPanel(bpy.types.Panel):
             col = row.column()
             col.prop(texture_props, "placeholder")
             col.enabled = texture_props.use_placeholder
+
+            box.template_ID(texture_props, "image", new="image.new", open="image.open")
             prop_split(box, texture_props, "format")
             prop_split(box, texture_props, "mipmap")
             prop_split(box, texture_props, "dithering")
