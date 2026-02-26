@@ -81,7 +81,7 @@ COMBINER_0_MUXES_FAST64_MAP = {
     "1": "1",
     "NOISE": "NOISE",
     "0": "0",
-    "CENTER": "CENTER",
+    "KEYCENTER": "CENTER",
     "K4": "K4",
     "SCALE": "SCALE",
     "TEX0_ALPHA": "TEXEL0_ALPHA",
@@ -99,6 +99,7 @@ del COMBINER_1_MUXES_FAST64_MAP["TEX1"]
 COMBINER_1_MUXES_FAST64_MAP.update(
     {
         "COMBINED": "COMBINED",
+        "COMBINED_ALPHA": "COMBINED_ALPHA",
         "TEX0_BUG": "TEXEL1",
         "TEX1": "TEXEL0",
     }
