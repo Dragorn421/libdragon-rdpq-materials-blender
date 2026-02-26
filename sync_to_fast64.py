@@ -392,6 +392,7 @@ def rdpq_material_props_to_fast64_props(
 
     # Other
 
+    mat_fast64.uv_basis = "TEXEL0"
     mat_fast64.rdp_settings.g_shade_smooth = True
     mat_fast64.rdp_settings.g_lighting = False
     mat_fast64.rdp_settings.g_cull_front = False
