@@ -8,8 +8,6 @@ bl_info = {
     "blender": (3, 2, 0),
 }
 
-import dataclasses
-
 import bpy
 import bpy.utils
 
