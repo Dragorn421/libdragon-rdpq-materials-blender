@@ -41,7 +41,7 @@ def on_update_auto_sync_to_fast64(self, context: bpy.types.Context):
 
 
 @bpy.app.handlers.persistent
-def handler_load_post_start_materials_auto_sync_to_fast64():
+def handler_load_post_start_materials_auto_sync_to_fast64(*_):
     for mat in bpy.data.materials.values():
         assert mat is not None
         mat_rdpq = util.LIBDRAGON_RDPQ(mat)
