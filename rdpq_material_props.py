@@ -709,19 +709,14 @@ class RDPQMaterialOverrideRenderModeProperties(bpy.types.PropertyGroup):
         max=255,
     )
 
-    override_z_compare: bpy.props.BoolProperty(
-        name="Override Z Compare",
+    override_z_compare_and_z_update: bpy.props.BoolProperty(
+        name="Override Z Compare and Z Update",
         description="",
     )
     z_compare: bpy.props.BoolProperty(
         name="Z Compare",
         description="",
         default=True,
-    )
-
-    override_z_update: bpy.props.BoolProperty(
-        name="Override Z Update",
-        description="",
     )
     z_update: bpy.props.BoolProperty(
         name="Z Update",
@@ -903,9 +898,8 @@ LIBDRAGON_RDPQ_PROPS_LIST = RecursivePropsList(
                         "texture_perspective_correction",
                         "override_alpha_compare",
                         "alpha_compare_threshold",
-                        "override_z_compare",
+                        "override_z_compare_and_z_update",
                         "z_compare",
-                        "override_z_update",
                         "z_update",
                         "override_fixed_z",
                         "fixed_z",

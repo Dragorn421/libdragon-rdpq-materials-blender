@@ -184,7 +184,18 @@ def rdpq_material_properties_to_dict(
         mat_data["rm.alpha_compare"] = str(
             mat_rdpq.override_render_mode.alpha_compare_threshold
         )
-    # mat_data["rm.zmode"]  # TODO
+    if mat_rdpq.override_render_mode.override_z_compare_and_z_update:
+        mat_data["rm.zmode"] = {
+            (False, False): "none",
+            (True, False): "compare",
+            (False, True): "update",
+            (True, True): "compare+update",
+        }[
+            (
+                mat_rdpq.override_render_mode.z_compare,
+                mat_rdpq.override_render_mode.z_update,
+            )
+        ]
     if mat_rdpq.override_render_mode.override_fixed_z:
         mat_data["rm.z_override"] = str(mat_rdpq.override_render_mode.fixed_z)
         mat_data["rm.deltaz_override"] = str(

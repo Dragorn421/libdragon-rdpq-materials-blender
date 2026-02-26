@@ -442,8 +442,7 @@ class RDPQMaterialPanel(bpy.types.Panel):
             "override_texture_perspective_correction", "texture_perspective_correction"
         )
         prop_override("override_alpha_compare", "alpha_compare_threshold")
-        prop_override("override_z_compare", "z_compare")
-        prop_override("override_z_update", "z_update")
+        prop_override("override_z_compare_and_z_update", "z_compare", "z_update")
         prop_override("override_fixed_z", "fixed_z", "fixed_z_deltaz")
 
 

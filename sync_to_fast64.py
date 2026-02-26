@@ -351,13 +351,13 @@ def rdpq_material_props_to_fast64_props(
 
     mat_fast64.rdp_settings.z_cmp = (
         mat_rdpq.override_render_mode.z_compare
-        if mat_rdpq.override_render_mode.override_z_compare
+        if mat_rdpq.override_render_mode.override_z_compare_and_z_update
         else world_rdpq.defaults.z_compare
     )
 
     mat_fast64.rdp_settings.z_upd = (
         mat_rdpq.override_render_mode.z_update
-        if mat_rdpq.override_render_mode.override_z_update
+        if mat_rdpq.override_render_mode.override_z_compare_and_z_update
         else world_rdpq.defaults.z_update
     )
 
