@@ -18,6 +18,23 @@ from . import sync_to_fast64
 from . import util
 
 
+import importlib
+
+loc = locals()
+for n in (
+    "export_to_mkmaterial",
+    "gltf_extension",
+    "rdpq_material_props",
+    "rdpq_material_props_logic",
+    "sync_to_fast64",
+    "util",
+):
+    if n in loc:
+        importlib.reload(loc[n])
+    else:
+        importlib.import_module(".%s" % n, __package__)
+
+
 class RDPQWorldDefaultsProperties(bpy.types.PropertyGroup):
     antialias: bpy.props.EnumProperty(
         name="Antialias",
