@@ -158,8 +158,23 @@ def rdpq_material_props_to_fast64_props(
         texture_props: rdpq_material_props.RDPQMaterialTextureProperties,
         tex_fast64_props,
     ):
-        tex_fast64_props.tex_set = not texture_props.use_placeholder
-        tex_fast64_props.tex = texture_props.image
+        tex_fast64_props.tex_set = True
+        if texture_props.use_placeholder:
+            image = None
+            for default_placeholder in world_rdpq.defaults.placeholders:
+                if default_placeholder.slot_index == texture_props.placeholder:
+                    image = default_placeholder.image
+                    # TODO do libdragon placeholders also contain ST information?
+                    break
+            tex_fast64_props.tex = image
+            tex_fast64_props.use_tex_reference = True
+            tex_fast64_props.tex_reference = str(texture_props.placeholder)
+            tex_fast64_props.tex_reference_size = (
+                (32, 32) if image is None else image.size
+            )
+        else:
+            tex_fast64_props.tex = texture_props.image
+            tex_fast64_props.use_tex_reference = False
         texture_format = texture_props.format
         if texture_format == "AUTO":
             # TODO invoke mksprite to guess a format?

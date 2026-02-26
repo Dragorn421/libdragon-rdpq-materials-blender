@@ -35,6 +35,21 @@ for n in (
         importlib.import_module(".%s" % n, __package__)
 
 
+class RDPQWorldDefaultsPlaceholderProperties(bpy.types.PropertyGroup):
+    slot_index: bpy.props.IntProperty(
+        name="Slot",
+        description="",
+        default=1,
+        min=1,
+        max=15,
+    )
+    image: bpy.props.PointerProperty(
+        type=bpy.types.Image,
+        name="Image",
+        description="",
+    )
+
+
 class RDPQWorldDefaultsProperties(bpy.types.PropertyGroup):
     antialias: bpy.props.EnumProperty(
         name="Antialias",
@@ -135,6 +150,10 @@ class RDPQWorldDefaultsProperties(bpy.types.PropertyGroup):
         max=32767,
     )
 
+    placeholders: bpy.props.CollectionProperty(
+        type=RDPQWorldDefaultsPlaceholderProperties,
+    )
+
 
 class RDPQWorldProperties(bpy.types.PropertyGroup):
     defaults_: bpy.props.PointerProperty(type=RDPQWorldDefaultsProperties)
@@ -149,6 +168,44 @@ def prop_split(layout: bpy.types.UILayout, data, prop_name: str):
     layout.use_property_decorate = False
     layout.prop(data, prop_name)
     layout.use_property_split = False
+
+
+class RDPQWorldDefaultsPlaceholderAddOperator(bpy.types.Operator):
+    bl_idname = "libdragon_rdpq.rdpq_world_defaults_placeholder_add"
+    bl_label = "Add placeholder to RDPQ world defaults"
+
+    @classmethod
+    def poll(cls, context):
+        return hasattr(context, "world") and context.world is not None
+
+    def execute(self, context):  # type: ignore
+        world = context.world
+        assert world is not None
+        world_rdpq = util.LIBDRAGON_RDPQ(world)
+
+        world_rdpq.defaults.placeholders.add()
+
+        return {"FINISHED"}
+
+
+class RDPQWorldDefaultsPlaceholderRemoveOperator(bpy.types.Operator):
+    bl_idname = "libdragon_rdpq.rdpq_world_defaults_placeholder_remove"
+    bl_label = "Remove placeholder from RDPQ world defaults"
+
+    index: bpy.props.IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return hasattr(context, "world") and context.world is not None
+
+    def execute(self, context):  # type: ignore
+        world = context.world
+        assert world is not None
+        world_rdpq = util.LIBDRAGON_RDPQ(world)
+
+        world_rdpq.defaults.placeholders.remove(self.index)
+
+        return {"FINISHED"}
 
 
 class RDPQWorldPanel(bpy.types.Panel):
@@ -190,6 +247,29 @@ class RDPQWorldPanel(bpy.types.Panel):
         col.prop(world_rdpq.defaults, "fixed_z_value")
         col.prop(world_rdpq.defaults, "fixed_z_deltaz")
         col.enabled = world_rdpq.defaults.fixed_z
+
+        box = layout.box()
+        box.label(text="Placeholders")
+        set_placeholders: set[int] = set()
+        for i, placeholder in enumerate(world_rdpq.defaults.placeholders):
+            split = box.row().split(factor=0.3)
+            split.prop(placeholder, "slot_index")
+            row = split.row()
+            if placeholder.slot_index in set_placeholders:
+                row.label(text="Duplicate slot")
+            else:
+                set_placeholders.add(placeholder.slot_index)
+                row.prop(placeholder, "image")
+            row.operator(
+                RDPQWorldDefaultsPlaceholderRemoveOperator.bl_idname,
+                text="",
+                icon="REMOVE",
+            ).index = i
+        box.operator(
+            RDPQWorldDefaultsPlaceholderAddOperator.bl_idname,
+            text="Add Placeholder",
+            icon="ADD",
+        )
 
 
 class RDPQMaterialPanel(bpy.types.Panel):
@@ -244,10 +324,16 @@ class RDPQMaterialPanel(bpy.types.Panel):
             col.prop(texture_props, "placeholder")
             col.enabled = texture_props.use_placeholder
 
-            box.template_ID(texture_props, "image", new="image.new", open="image.open")
-            prop_split(box, texture_props, "format")
-            prop_split(box, texture_props, "mipmap")
-            prop_split(box, texture_props, "dithering")
+            if not texture_props.use_placeholder:
+                box.template_ID(
+                    texture_props, "image", new="image.new", open="image.open"
+                )
+                prop_split(box, texture_props, "format")
+                prop_split(box, texture_props, "mipmap")
+                prop_split(box, texture_props, "dithering")
+
+            # TODO do libdragon placeholders also contain ST information?
+            # aka should ST props only be drawn if not a placeholder?
 
             box_s = box.box()
             box_s.label(text="S Properties")
@@ -366,6 +452,7 @@ class RDPQSceneProperties(bpy.types.PropertyGroup):
 classes = (
     gltf_extension.glTFExtensionProperties,
     RDPQSceneProperties,
+    RDPQWorldDefaultsPlaceholderProperties,
     RDPQWorldDefaultsProperties,
     RDPQWorldProperties,
     rdpq_material_props.RDPQMaterialTextureAxisProperties,
@@ -377,6 +464,8 @@ classes = (
     sync_to_fast64.RDPQMaterialPropsToFast64Operator,
     sync_to_fast64.RDPQMaterialRecreateAsFast64Operator,
     export_to_mkmaterial.RDPQMaterialExportOperator,
+    RDPQWorldDefaultsPlaceholderAddOperator,
+    RDPQWorldDefaultsPlaceholderRemoveOperator,
     RDPQWorldPanel,
     RDPQMaterialPanel,
 )

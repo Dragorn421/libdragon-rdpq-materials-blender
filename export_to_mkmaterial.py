@@ -59,16 +59,22 @@ def rdpq_material_properties_to_dict(
         tex_i: int,
         texture_props: rdpq_material_props.RDPQMaterialTextureProperties,
     ):
-        if texture_props.image is not None:
-            # TODO the image name is not the right thing to use here
-            mat_data[f"tex{tex_i}.name"] = texture_props.image.name
-        mat_data.update(
-            {
-                f"tex{tex_i}.fmt": texture_props.format,
-                f"tex{tex_i}.mipmap": texture_props.mipmap,
-                f"tex{tex_i}.dithering": texture_props.dithering,
-            }
-        )
+        if texture_props.use_placeholder:
+            raise NotImplementedError("mkmaterial doesn't implement placeholders yet?")
+            # mat_data[f"tex{tex_i}.placeholder"] = str(texture_props.placeholder)
+        else:
+            if texture_props.image is not None:
+                # TODO the image name is not the right thing to use here
+                mat_data[f"tex{tex_i}.name"] = texture_props.image.name
+            mat_data.update(
+                {
+                    f"tex{tex_i}.fmt": texture_props.format,
+                    f"tex{tex_i}.mipmap": texture_props.mipmap,
+                    f"tex{tex_i}.dithering": texture_props.dithering,
+                }
+            )
+        # TODO do libdragon placeholders also contain ST information?
+        # aka should ST props only be exported if not a placeholder?
         handle_texture_axis(tex_i, "s", texture_props.s)
         handle_texture_axis(tex_i, "t", texture_props.t)
 
