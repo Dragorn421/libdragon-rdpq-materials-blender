@@ -30,7 +30,6 @@ def on_update_auto_sync_to_fast64(self, context: bpy.types.Context):
         scene = bpy.context.scene
         assert scene is not None
         world = scene.world
-        assert world is not None  # Prop is drawn disabled if there is no world
         start_auto_sync_to_fast64(mat)
         rdpq_material_props_to_fast64_props(mat, world)
     else:
@@ -106,15 +105,31 @@ COMBINER_1_MUXES_FAST64_MAP.update(
 )
 
 
+class WORLD_RDPQ_DEFAULTS_DEFAULTS:
+    antialias = "STANDARD"
+    fog = "STANDARD"
+    dithering = "RGB_SQUARE_A_SQUARE"
+    texture_filtering = "BILINEAR"
+    texture_perspective_correction = True
+    alpha_compare = False
+    alpha_compare_threshold = 127
+    z_compare = True
+    z_update = True
+    fixed_z = False
+    fixed_z_value = 0
+    fixed_z_deltaz = 0
+    placeholders = []
+
+
 def rdpq_material_props_to_fast64_props(
     mat: bpy.types.Material, world: Optional[bpy.types.World]
 ):
-    if world is None:
-        raise NotImplementedError()  # TODO
-
     mat_rdpq = util.LIBDRAGON_RDPQ(mat)
     mat_fast64 = mat.f3d_mat  # type: ignore
-    world_rdpq = util.LIBDRAGON_RDPQ(world)
+    if world is not None:
+        world_rdpq_defaults = util.LIBDRAGON_RDPQ(world).defaults
+    else:
+        world_rdpq_defaults = WORLD_RDPQ_DEFAULTS_DEFAULTS
 
     # Texture
 
@@ -161,7 +176,7 @@ def rdpq_material_props_to_fast64_props(
         tex_fast64_props.tex_set = True
         if texture_props.use_placeholder:
             image = None
-            for default_placeholder in world_rdpq.defaults.placeholders:
+            for default_placeholder in world_rdpq_defaults.placeholders:
                 if default_placeholder.slot_index == texture_props.placeholder:
                     image = default_placeholder.image
                     # TODO do libdragon placeholders also contain ST information?
@@ -273,13 +288,13 @@ def rdpq_material_props_to_fast64_props(
     if mat_rdpq.override_render_mode.override_antialias:
         mat_rdpq.override_render_mode.antialias
     else:
-        world_rdpq.defaults.antialias
+        world_rdpq_defaults.antialias
 
     # TODO
     if mat_rdpq.override_render_mode.override_fog:
         mat_rdpq.override_render_mode.fog
     else:
-        world_rdpq.defaults.fog
+        world_rdpq_defaults.fog
 
     (
         mat_fast64.rdp_settings.g_mdsft_rgb_dither,
@@ -306,7 +321,7 @@ def rdpq_material_props_to_fast64_props(
         (
             mat_rdpq.override_render_mode.dithering
             if mat_rdpq.override_render_mode.override_dithering
-            else world_rdpq.defaults.dithering
+            else world_rdpq_defaults.dithering
         )
     ]
 
@@ -318,7 +333,7 @@ def rdpq_material_props_to_fast64_props(
         (
             mat_rdpq.override_render_mode.texture_filtering
             if mat_rdpq.override_render_mode.override_texture_filtering
-            else world_rdpq.defaults.texture_filtering
+            else world_rdpq_defaults.texture_filtering
         )
     ]
 
@@ -327,7 +342,7 @@ def rdpq_material_props_to_fast64_props(
         if (
             mat_rdpq.override_render_mode.texture_perspective_correction
             if mat_rdpq.override_render_mode.override_texture_perspective_correction
-            else world_rdpq.defaults.texture_perspective_correction
+            else world_rdpq_defaults.texture_perspective_correction
         )
         else "G_TP_NONE"
     )
@@ -336,9 +351,9 @@ def rdpq_material_props_to_fast64_props(
         mat_fast64.rdp_settings.g_mdsft_alpha_compare = "G_AC_THRESHOLD"
         alpha_compare_threshold = mat_rdpq.override_render_mode.alpha_compare_threshold
     else:
-        if world_rdpq.defaults.alpha_compare:
+        if world_rdpq_defaults.alpha_compare:
             mat_fast64.rdp_settings.g_mdsft_alpha_compare = "G_AC_THRESHOLD"
-            alpha_compare_threshold = world_rdpq.defaults.alpha_compare_threshold
+            alpha_compare_threshold = world_rdpq_defaults.alpha_compare_threshold
         else:
             mat_fast64.rdp_settings.g_mdsft_alpha_compare = "G_AC_NONE"
             alpha_compare_threshold = None
@@ -352,13 +367,13 @@ def rdpq_material_props_to_fast64_props(
     mat_fast64.rdp_settings.z_cmp = (
         mat_rdpq.override_render_mode.z_compare
         if mat_rdpq.override_render_mode.override_z_compare_and_z_update
-        else world_rdpq.defaults.z_compare
+        else world_rdpq_defaults.z_compare
     )
 
     mat_fast64.rdp_settings.z_upd = (
         mat_rdpq.override_render_mode.z_update
         if mat_rdpq.override_render_mode.override_z_compare_and_z_update
-        else world_rdpq.defaults.z_update
+        else world_rdpq_defaults.z_update
     )
 
     if mat_rdpq.override_render_mode.override_fixed_z:
@@ -368,10 +383,10 @@ def rdpq_material_props_to_fast64_props(
             mat_rdpq.override_render_mode.fixed_z_deltaz
         )
     else:
-        if world_rdpq.defaults.fixed_z:
+        if world_rdpq_defaults.fixed_z:
             mat_fast64.rdp_settings.g_mdsft_zsrcsel = "G_ZS_PRIM"
-            mat_fast64.rdp_settings.prim_depth.z = world_rdpq.defaults.fixed_z_value
-            mat_fast64.rdp_settings.prim_depth.dz = world_rdpq.defaults.fixed_z_deltaz
+            mat_fast64.rdp_settings.prim_depth.z = world_rdpq_defaults.fixed_z_value
+            mat_fast64.rdp_settings.prim_depth.dz = world_rdpq_defaults.fixed_z_deltaz
         else:
             mat_fast64.rdp_settings.g_mdsft_zsrcsel = "G_ZS_PIXEL"
 
@@ -400,8 +415,6 @@ def msgbus_sync_rdpq_material_props_to_fast64_props(
         if scene is None:
             return
         world = scene.world
-        if world is None:
-            return
 
         def delayed_callback():
             QUEUED_UPDATES.discard(mat)
@@ -439,7 +452,6 @@ class RDPQMaterialPropsToFast64Operator(bpy.types.Operator):
             and context.material is not None
             and is_fast64_material(context.material)
             and context.scene is not None
-            and context.scene.world is not None
         )
 
     def execute(self, context):  # type: ignore
@@ -447,7 +459,6 @@ class RDPQMaterialPropsToFast64Operator(bpy.types.Operator):
         assert mat is not None
         assert context.scene is not None
         world = context.scene.world
-        assert world is not None
         rdpq_material_props_to_fast64_props(mat, world)
         return {"FINISHED"}
 
@@ -508,7 +519,6 @@ class RDPQMaterialRecreateAsFast64Operator(bpy.types.Operator):
             hasattr(context, "material")
             and context.material is not None
             and context.scene is not None
-            and context.scene.world is not None
         )
 
     def execute(self, context):  # type: ignore
@@ -516,6 +526,5 @@ class RDPQMaterialRecreateAsFast64Operator(bpy.types.Operator):
         assert mat is not None
         assert context.scene is not None
         world = context.scene.world
-        assert world is not None
         rdpq_material_recreate_as_fast64(mat, world)
         return {"FINISHED"}

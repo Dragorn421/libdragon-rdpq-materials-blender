@@ -300,7 +300,7 @@ class RDPQMaterialPanel(bpy.types.Panel):
                     layout.prop(mat_rdpq, "auto_sync_to_fast64")
                 else:
                     row = layout.row()
-                    if context.scene is None or context.scene.world is None:
+                    if context.scene is None:
                         col = row.column()
                         col.prop(mat_rdpq, "auto_sync_to_fast64")
                         col.enabled = False
@@ -310,8 +310,6 @@ class RDPQMaterialPanel(bpy.types.Panel):
                         sync_to_fast64.RDPQMaterialPropsToFast64Operator.bl_idname,
                         text="Sync to Fast64 props",
                     )
-                    if context.scene is None or context.scene.world is None:
-                        layout.label(text="Scene has no world!", icon="ERROR")
             else:
                 layout.operator(
                     sync_to_fast64.RDPQMaterialRecreateAsFast64Operator.bl_idname,
