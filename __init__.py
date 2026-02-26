@@ -1262,7 +1262,7 @@ def rdpq_material_props_to_fast64_props(
         raise NotImplementedError()  # TODO
 
     mat_rdpq = LIBDRAGON_RDPQ(mat)
-    mat_fast64 = mat.f3d_mat
+    mat_fast64 = mat.f3d_mat  # type: ignore
     world_rdpq = LIBDRAGON_RDPQ(world)
 
     # Texture
@@ -1538,7 +1538,7 @@ def msgbus_sync_rdpq_material_props_to_fast64_props(
 
         def delayed_callback():
             QUEUED_UPDATES.discard(mat)
-            with bpy.context.temp_override(material=mat):
+            with bpy.context.temp_override(material=mat):  # type: ignore
                 rdpq_material_props_to_fast64_props(mat, world)
 
         QUEUED_UPDATES.add(mat)
@@ -1572,7 +1572,7 @@ class RDPQMaterialPropsToFast64Operator(bpy.types.Operator):
             and context.scene.world is not None
         )
 
-    def execute(self, context):
+    def execute(self, context):  # type: ignore
         mat = context.material
         assert mat is not None
         assert context.scene is not None
@@ -1722,7 +1722,7 @@ def rdpq_material_recreate_as_fast64(
 ):
     # Create a fast64 material and find it
     keys_before = set(bpy.data.materials.keys())
-    bpy.ops.object.create_f3d_mat()
+    bpy.ops.object.create_f3d_mat()  # type: ignore
     keys_after = set(bpy.data.materials.keys())
     assert keys_after.issuperset(keys_before)
     keys_added = keys_after - keys_before
@@ -1762,7 +1762,7 @@ class RDPQMaterialRecreateAsFast64Operator(bpy.types.Operator):
             and context.scene.world is not None
         )
 
-    def execute(self, context):
+    def execute(self, context):  # type: ignore
         mat = context.material
         assert mat is not None
         assert context.scene is not None
@@ -2170,7 +2170,7 @@ class RDPQMaterialExportOperator(bpy.types.Operator):
     def poll(cls, context):
         return hasattr(context, "material") and context.material is not None
 
-    def execute(self, context):
+    def execute(self, context):  # type: ignore
         mat = context.material
         assert mat is not None
         mat_rdpq = LIBDRAGON_RDPQ(mat)
@@ -2194,7 +2194,7 @@ glTF_extension_name = "EXT_libdragon_rdpq_materials_jmat"
 class glTF2ExportUserExtension:
 
     def __init__(self):
-        from io_scene_gltf2.io.com.gltf2_io_extensions import Extension
+        from io_scene_gltf2.io.com.gltf2_io_extensions import Extension  # type: ignore
 
         self.Extension = Extension
         scene = bpy.context.scene
@@ -2203,7 +2203,7 @@ class glTF2ExportUserExtension:
 
     def gather_material_hook(
         self,
-        gltf2_material: "io_scene_gltf2.io.com.gltf2_io.Material",
+        gltf2_material: "io_scene_gltf2.io.com.gltf2_io.Material",  # type: ignore
         blender_material: bpy.types.Material,
         export_settings,
     ):
@@ -2253,11 +2253,15 @@ classes = (
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.types.Scene.libdragon_rdpq = bpy.props.PointerProperty(type=RDPQSceneProperties)
-    bpy.types.Material.libdragon_rdpq = bpy.props.PointerProperty(
-        type=RDPQMaterialProperties
+    bpy.types.Scene.libdragon_rdpq = (  # type: ignore
+        bpy.props.PointerProperty(type=RDPQSceneProperties)
     )
-    bpy.types.World.libdragon_rdpq = bpy.props.PointerProperty(type=RDPQWorldProperties)
+    bpy.types.Material.libdragon_rdpq = (  # type: ignore
+        bpy.props.PointerProperty(type=RDPQMaterialProperties)
+    )
+    bpy.types.World.libdragon_rdpq = (  # type: ignore
+        bpy.props.PointerProperty(type=RDPQWorldProperties)
+    )
     bpy.app.handlers.load_post.append(
         handler_load_post_start_materials_auto_sync_to_fast64
     )
@@ -2265,7 +2269,7 @@ def register():
         lambda: handler_load_post_start_materials_auto_sync_to_fast64()
     )
 
-    from io_scene_gltf2 import exporter_extension_layout_draw
+    from io_scene_gltf2 import exporter_extension_layout_draw  # type: ignore
 
     exporter_extension_layout_draw["libdragon RDPQ materials"] = (
         draw_gltf_extension_props
@@ -2273,7 +2277,7 @@ def register():
 
 
 def unregister():
-    from io_scene_gltf2 import exporter_extension_layout_draw
+    from io_scene_gltf2 import exporter_extension_layout_draw  # type: ignore
 
     del exporter_extension_layout_draw["libdragon RDPQ materials"]
 
@@ -2283,8 +2287,8 @@ def unregister():
         )
     except ValueError:
         pass
-    del bpy.types.Scene.libdragon_rdpq
-    del bpy.types.Material.libdragon_rdpq
-    del bpy.types.World.libdragon_rdpq
+    del bpy.types.Scene.libdragon_rdpq  # type: ignore
+    del bpy.types.Material.libdragon_rdpq  # type: ignore
+    del bpy.types.World.libdragon_rdpq  # type: ignore
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
