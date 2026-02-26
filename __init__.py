@@ -2022,7 +2022,7 @@ def rdpq_material_properties_to_dict(mat_rdpq: RDPQMaterialProperties):
         mat_data.update(
             {
                 f"tex{tex_i}.fmt": texture_props.format,
-                f"tex{tex_i}.mipmap": texture_props.mipmap.lower(),
+                f"tex{tex_i}.mipmap": texture_props.mipmap,
                 f"tex{tex_i}.dithering": texture_props.dithering,
             }
         )
