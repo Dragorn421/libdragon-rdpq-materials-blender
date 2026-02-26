@@ -17,6 +17,10 @@ from . import rdpq_material_props
 from . import sync_to_fast64
 from . import util
 
+# import glTF2ExportUserExtension into __init__.py
+# to make the extension visible to the glTF addon
+from .gltf_extension import glTF2ExportUserExtension
+
 
 import importlib
 
