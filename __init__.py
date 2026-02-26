@@ -11,10 +11,25 @@ bl_info = {
 import dataclasses
 import math
 from pathlib import Path
-from typing import Optional
+import typing
+from typing import Optional, TYPE_CHECKING
 
 import bpy
 import bpy.utils
+
+
+if TYPE_CHECKING:
+
+    @typing.overload
+    def LIBDRAGON_RDPQ(data: bpy.types.Scene) -> "RDPQSceneProperties": ...
+    @typing.overload
+    def LIBDRAGON_RDPQ(data: bpy.types.World) -> "RDPQWorldProperties": ...
+    @typing.overload
+    def LIBDRAGON_RDPQ(data: bpy.types.Material) -> "RDPQMaterialProperties": ...
+
+
+def LIBDRAGON_RDPQ(data):
+    return data.libdragon_rdpq
 
 
 class RDPQWorldDefaultsProperties(bpy.types.PropertyGroup):
@@ -434,7 +449,7 @@ COMB2B_ALPHA_MUL_ITEMS = (
 def on_update_combiner_preset(self, context: bpy.types.Context):
     mat = context.material
     assert mat is not None
-    mat_rdpq: RDPQMaterialProperties = mat.libdragon_rdpq
+    mat_rdpq = LIBDRAGON_RDPQ(mat)
     if mat_rdpq.combiner.preset == "FLAT":
         mat_rdpq.combiner.rgb_A = "0"
         mat_rdpq.combiner.rgb_B = "0"
@@ -782,7 +797,7 @@ BLEND2B_B2_ITEMS = (
 def on_update_blender_preset(self, context: bpy.types.Context):
     mat = context.material
     assert mat is not None
-    mat_rdpq: RDPQMaterialProperties = mat.libdragon_rdpq
+    mat_rdpq = LIBDRAGON_RDPQ(mat)
     # TODO handle fog
     if mat_rdpq.blender.preset == "NONE":
         # rdpq_mode_blender suggests passing "0 to disable", which corresponds to
@@ -1088,7 +1103,7 @@ SYNCED_MATERIALS: dict[bpy.types.Material, object] = {}
 
 
 def start_auto_sync_to_fast64(mat: bpy.types.Material):
-    mat_rdpq: RDPQMaterialProperties = mat.libdragon_rdpq
+    mat_rdpq = LIBDRAGON_RDPQ(mat)
     assert mat not in SYNCED_MATERIALS
     owner = object()
     SYNCED_MATERIALS[mat] = owner
@@ -1102,7 +1117,7 @@ def start_auto_sync_to_fast64(mat: bpy.types.Material):
 def on_update_auto_sync_to_fast64(self, context: bpy.types.Context):
     mat = context.material
     assert mat is not None
-    mat_rdpq: RDPQMaterialProperties = mat.libdragon_rdpq
+    mat_rdpq = LIBDRAGON_RDPQ(mat)
 
     if mat_rdpq.auto_sync_to_fast64:
         scene = bpy.context.scene
@@ -1122,7 +1137,7 @@ def on_update_auto_sync_to_fast64(self, context: bpy.types.Context):
 def handler_load_post_start_materials_auto_sync_to_fast64():
     for mat in bpy.data.materials.values():
         assert mat is not None
-        mat_rdpq: RDPQMaterialProperties = mat.libdragon_rdpq
+        mat_rdpq = LIBDRAGON_RDPQ(mat)
         if mat_rdpq.auto_sync_to_fast64:
             start_auto_sync_to_fast64(mat)
 
@@ -1246,9 +1261,9 @@ def rdpq_material_props_to_fast64_props(
     if world is None:
         raise NotImplementedError()  # TODO
 
-    mat_rdpq: RDPQMaterialProperties = mat.libdragon_rdpq
+    mat_rdpq = LIBDRAGON_RDPQ(mat)
     mat_fast64 = mat.f3d_mat
-    world_rdpq: RDPQWorldProperties = world.libdragon_rdpq
+    world_rdpq = LIBDRAGON_RDPQ(world)
 
     # Texture
 
@@ -1780,7 +1795,7 @@ class RDPQWorldPanel(bpy.types.Panel):
         assert layout is not None
         world = context.world
         assert world is not None
-        world_rdpq: RDPQWorldProperties = world.libdragon_rdpq
+        world_rdpq = LIBDRAGON_RDPQ(world)
 
         layout.prop(world_rdpq.defaults, "antialias")
         layout.prop(world_rdpq.defaults, "fog")
@@ -1821,7 +1836,7 @@ class RDPQMaterialPanel(bpy.types.Panel):
         assert layout is not None
         mat = context.material
         assert mat is not None
-        mat_rdpq: RDPQMaterialProperties = mat.libdragon_rdpq
+        mat_rdpq = LIBDRAGON_RDPQ(mat)
 
         if is_fast64_available():
             if is_fast64_material(mat):
@@ -2158,7 +2173,7 @@ class RDPQMaterialExportOperator(bpy.types.Operator):
     def execute(self, context):
         mat = context.material
         assert mat is not None
-        mat_rdpq: RDPQMaterialProperties = mat.libdragon_rdpq
+        mat_rdpq = LIBDRAGON_RDPQ(mat)
 
         mat_data = rdpq_material_properties_to_dict(mat_rdpq)
 
@@ -2182,7 +2197,9 @@ class glTF2ExportUserExtension:
         from io_scene_gltf2.io.com.gltf2_io_extensions import Extension
 
         self.Extension = Extension
-        self.properties = bpy.context.scene.libdragon_rdpq.gltf_extension
+        scene = bpy.context.scene
+        assert scene is not None
+        self.properties = LIBDRAGON_RDPQ(scene).gltf_extension
 
     def gather_material_hook(
         self,
@@ -2191,7 +2208,7 @@ class glTF2ExportUserExtension:
         export_settings,
     ):
         gltf2_material.extensions[glTF_extension_name] = (
-            rdpq_material_properties_to_dict(blender_material.libdragon_rdpq)
+            rdpq_material_properties_to_dict(LIBDRAGON_RDPQ(blender_material))
         )
 
 
@@ -2205,7 +2222,9 @@ class glTFExtensionProperties(bpy.types.PropertyGroup):
 
 def draw_gltf_extension_props(context: bpy.types.Context, layout: bpy.types.UILayout):
     layout.use_property_split = False
-    layout.prop(context.scene.libdragon_rdpq.gltf_extension, "enabled")
+    scene = context.scene
+    assert scene is not None
+    layout.prop(LIBDRAGON_RDPQ(scene).gltf_extension, "enabled")
 
 
 class RDPQSceneProperties(bpy.types.PropertyGroup):
