@@ -141,7 +141,6 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
         assert self.shader is not None
 
         self.shader.bind()
-        self.shader.uniform_float("color", (1, 1, 0, 1))
         for mesh in self.scene_data.meshes:
             self.shader.uniform_float(
                 "matMVP",

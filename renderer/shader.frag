@@ -1,5 +1,3 @@
-uniform vec4 color;
-
 in vec4 shadeColor;
 
 out vec4 FragColor;
@@ -14,6 +12,6 @@ vec3 gammaToLinear(in vec3 color) {
 
 void main() 
 {
-    FragColor = color * shadeColor;
+    FragColor = shadeColor;
     FragColor.rgb = gammaToLinear(FragColor.rgb);
 }
