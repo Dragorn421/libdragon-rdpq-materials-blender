@@ -21,6 +21,12 @@ from . import util
 # to make the extension visible to the glTF addon
 from .gltf_extension import glTF2ExportUserExtension
 
+# Used by old versions of the gltf addon
+if gltf_extension.gltf_export_props_use_draw:
+    from .gltf_extension import draw
+if gltf_extension.gltf_export_props_use_register_panel:
+    from .gltf_extension import register_panel
+
 
 import importlib
 
@@ -491,17 +497,19 @@ def register():
         lambda: sync_to_fast64.handler_load_post_start_materials_auto_sync_to_fast64()
     )
 
-    from io_scene_gltf2 import exporter_extension_layout_draw  # type: ignore
+    if gltf_extension.gltf_export_props_use_exporter_extension_layout_draw:
+        from io_scene_gltf2 import exporter_extension_layout_draw  # type: ignore
 
-    exporter_extension_layout_draw["libdragon RDPQ materials"] = (
-        gltf_extension.draw_gltf_extension_props
-    )
+        exporter_extension_layout_draw["libdragon RDPQ materials"] = (
+            gltf_extension.draw_gltf_extension_props
+        )
 
 
 def unregister():
-    from io_scene_gltf2 import exporter_extension_layout_draw  # type: ignore
+    if gltf_extension.gltf_export_props_use_exporter_extension_layout_draw:
+        from io_scene_gltf2 import exporter_extension_layout_draw  # type: ignore
 
-    del exporter_extension_layout_draw["libdragon RDPQ materials"]
+        del exporter_extension_layout_draw["libdragon RDPQ materials"]
 
     try:
         bpy.app.handlers.load_post.remove(
