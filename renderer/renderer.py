@@ -13,6 +13,7 @@ class MeshData:
     loop_triangles_loops: np.ndarray
     loops_co: np.ndarray
     loops_normal: np.ndarray
+    loops_color: np.ndarray
 
 
 @dataclasses.dataclass
@@ -60,6 +61,42 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
                 loops_vertex_index = np.empty(len(mesh.loops), dtype=np.int32)
                 mesh.loops.foreach_get("vertex_index", loops_vertex_index)
 
+                active_color_attribute = mesh.color_attributes.active_color
+                if active_color_attribute is None:
+                    loops_color = np.ones((len(mesh.loops), 4), dtype=np.float32)
+                else:
+                    if active_color_attribute.data_type in {
+                        "FLOAT_COLOR",
+                        "BYTE_COLOR",
+                    }:
+                        assert isinstance(
+                            active_color_attribute,
+                            (
+                                bpy.types.FloatColorAttribute,
+                                bpy.types.ByteColorAttribute,
+                            ),
+                        )
+                        # Note: for ByteColorAttribute too the color uses floats
+                        if active_color_attribute.domain == "CORNER":
+                            loops_color = np.empty(
+                                (len(mesh.loops), 4), dtype=np.float32
+                            )
+                            active_color_attribute.data.foreach_get(
+                                "color", loops_color.ravel()
+                            )
+                        elif active_color_attribute.domain == "POINT":
+                            vertices_color = np.empty(
+                                (len(mesh.vertices), 4), dtype=np.float32
+                            )
+                            active_color_attribute.data.foreach_get(
+                                "color", vertices_color.ravel()
+                            )
+                            loops_color = vertices_color[loops_vertex_index, :]
+                        else:
+                            raise NotImplementedError(active_color_attribute.domain)
+                    else:
+                        raise NotImplementedError(active_color_attribute.data_type)
+
                 loops_co = vertices_co[loops_vertex_index, :]
 
                 mesh.free_normals_split()
@@ -71,6 +108,7 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
                         loop_triangles_loops,
                         loops_co,
                         loops_normal,
+                        loops_color,
                     )
                 )
 
@@ -116,7 +154,11 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
             batch: gpu.types.GPUBatch = gpu_extras.batch.batch_for_shader(
                 self.shader,
                 "TRIS",
-                {"inPos": mesh.loops_co, "inNormal": mesh.loops_normal},
+                {
+                    "inPos": mesh.loops_co,
+                    "inNormal": mesh.loops_normal,
+                    "inColor": mesh.loops_color,
+                },
                 indices=mesh.loop_triangles_loops,
             )
             batch.draw(self.shader)
