@@ -162,3 +162,21 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
                 indices=mesh.loop_triangles_loops,
             )
             batch.draw(self.shader)
+
+
+def get_compatible_panels():
+    exclude_panels = {
+        "VIEWLAYER_PT_filter",
+        "VIEWLAYER_PT_layer_passes",
+    }
+
+    panels = []
+    for panel in bpy.types.Panel.__subclasses__():
+        if (
+            hasattr(panel, "COMPAT_ENGINES")
+            and "BLENDER_RENDER" in panel.COMPAT_ENGINES
+        ):
+            if panel.__name__ not in exclude_panels:
+                panels.append(panel)
+
+    return panels

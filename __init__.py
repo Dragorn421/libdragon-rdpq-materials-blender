@@ -587,8 +587,15 @@ def register():
             gltf_extension.draw_gltf_extension_props
         )
 
+    for panel in renderer.get_compatible_panels():
+        panel.COMPAT_ENGINES.add(renderer.RDPQMaterialsRenderEngine.bl_idname)
+
 
 def unregister():
+    for panel in renderer.get_compatible_panels():
+        if renderer.RDPQMaterialsRenderEngine.bl_idname in panel.COMPAT_ENGINES:
+            panel.COMPAT_ENGINES.remove(renderer.RDPQMaterialsRenderEngine.bl_idname)
+
     if gltf_extension.gltf_export_props_use_exporter_extension_layout_draw:
         from io_scene_gltf2 import exporter_extension_layout_draw  # type: ignore
 
