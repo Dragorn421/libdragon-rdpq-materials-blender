@@ -16,6 +16,7 @@ import bpy.utils
 
 from . import export_to_mkmaterial
 from . import gltf_extension
+from .renderer import renderer
 from . import rdpq_material_props
 from . import sync_to_fast64
 from . import util
@@ -556,6 +557,7 @@ classes = (
     RDPQWorldDefaultsPlaceholderRemoveOperator,
     RDPQWorldPanel,
     RDPQMaterialPanel,
+    renderer.RDPQMaterialsRenderEngine,
 )
 
 
