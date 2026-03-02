@@ -212,11 +212,15 @@ def get_compatible_panels():
         "VIEWLAYER_PT_layer_passes",
     }
 
+    include_panels = {
+        "EEVEE_MATERIAL_PT_context_material",
+    }
+
     panels = []
     for panel in bpy.types.Panel.__subclasses__():
         if (
-            hasattr(panel, "COMPAT_ENGINES")
-            and "BLENDER_RENDER" in panel.COMPAT_ENGINES
+            "BLENDER_RENDER" in getattr(panel, "COMPAT_ENGINES", ())
+            or panel.__name__ in include_panels
         ):
             if panel.__name__ not in exclude_panels:
                 panels.append(panel)
