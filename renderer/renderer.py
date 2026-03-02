@@ -6,6 +6,8 @@ import mathutils
 
 import numpy as np
 
+from .. import util
+
 
 @dataclasses.dataclass
 class MeshData:
@@ -14,6 +16,7 @@ class MeshData:
     loops_co: np.ndarray
     loops_normal: np.ndarray
     loops_color: np.ndarray
+    dbgTestColor: tuple[float, float, float, float]
 
 
 @dataclasses.dataclass
@@ -46,6 +49,8 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
                 mesh = obj_eval.to_mesh()
                 mesh.calc_loop_triangles()
                 mesh.calc_normals_split()
+
+                model_matrix = obj.matrix_world
 
                 vertices_co = np.empty((len(mesh.vertices), 3), dtype=np.float32)
                 mesh.vertices.foreach_get("co", vertices_co.ravel())
@@ -97,20 +102,57 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
                     else:
                         raise NotImplementedError(active_color_attribute.data_type)
 
+                loop_triangles_material_index = np.empty(
+                    len(mesh.loop_triangles), dtype=np.int32
+                )
+                mesh.loop_triangles.foreach_get(
+                    "material_index", loop_triangles_material_index.ravel()
+                )
+
                 loops_co = vertices_co[loops_vertex_index, :]
 
                 mesh.free_normals_split()
                 obj_eval.to_mesh_clear()
 
-                meshes.append(
-                    MeshData(
-                        obj.matrix_world,
-                        loop_triangles_loops,
-                        loops_co,
-                        loops_normal,
-                        loops_color,
+                mat_mask = np.empty_like(loop_triangles_material_index, dtype=bool)
+
+                for mat_index in np.unique(loop_triangles_material_index):
+                    mat_index: int
+                    if mat_index < len(obj.material_slots):
+                        mat = obj.material_slots[mat_index].material
+                    else:
+                        mat = None
+
+                    # Get the loops indices for the triangles using mat
+                    np.equal(loop_triangles_material_index, mat_index, out=mat_mask)
+                    mat_triangles_loops = loop_triangles_loops[mat_mask, :]
+
+                    # Get the loops used by the mat-using triangles,
+                    # for subsetting the coordinates/normal/color buffers,
+                    # and also the triangles loops indices in that subset of triangles.
+                    mat_used_loops, mat_triangles_loops_used_loops = np.unique(
+                        mat_triangles_loops, return_inverse=True
                     )
-                )
+                    mat_triangles_loops_used_loops = (
+                        mat_triangles_loops_used_loops.reshape(
+                            mat_triangles_loops.shape
+                        ).astype(np.int32)
+                    )
+
+                    meshes.append(
+                        MeshData(
+                            model_matrix,
+                            mat_triangles_loops_used_loops,
+                            loops_co[mat_used_loops, :],
+                            loops_normal[mat_used_loops, :],
+                            loops_color[mat_used_loops, :],
+                            (
+                                (*util.LIBDRAGON_RDPQ(mat).blender.blend_color, 1)
+                                if mat is not None
+                                else (1, 0, 0, 1)
+                            ),
+                        )
+                    )
 
         self.scene_data = SceneData(meshes)
 
@@ -150,6 +192,7 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
                 "matMV",
                 context.region_data.view_matrix @ mesh.model_matrix,
             )
+            self.shader.uniform_float("dbgTestColor", mesh.dbgTestColor)
             batch: gpu.types.GPUBatch = gpu_extras.batch.batch_for_shader(
                 self.shader,
                 "TRIS",

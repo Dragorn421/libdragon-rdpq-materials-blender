@@ -1,5 +1,6 @@
 uniform mat4 matMVP;
 uniform mat4 matMV;
+uniform vec4 dbgTestColor;
 
 in vec3 inPos;
 in vec3 inNormal;
@@ -19,6 +20,6 @@ void main()
 {
     gl_Position = matMVP * vec4(inPos, 1.0);
     float i = max(0, dot(normalize(mat3(matMV) * inNormal), vec3(0, 0, 1)));
-    shadeColor = inColor * vec4(i, i, i, 1.0);
+    shadeColor = dbgTestColor * inColor * vec4(i, i, i, 1.0);
     shadeColor.rgb = linearToGamma(shadeColor.rgb);
 }
