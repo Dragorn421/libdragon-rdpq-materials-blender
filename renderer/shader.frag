@@ -1,4 +1,8 @@
+uniform int inValidInputs;
+uniform sampler2D inTex0;
+
 in vec4 shadeColor;
+in vec2 uv;
 
 out vec4 FragColor;
 
@@ -14,4 +18,6 @@ void main()
 {
     FragColor = shadeColor;
     FragColor.rgb = gammaToLinear(FragColor.rgb);
+    if ((inValidInputs & VALID_IN_TEX0) != 0 && (inValidInputs & VALID_IN_UV) != 0)
+        FragColor.rgb *= texture(inTex0, uv).rgb;
 }

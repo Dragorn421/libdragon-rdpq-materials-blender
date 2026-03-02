@@ -1,5 +1,6 @@
 import dataclasses
 from pathlib import Path
+from typing import Optional
 
 import bpy
 import mathutils
@@ -7,6 +8,12 @@ import mathutils
 import numpy as np
 
 from .. import util
+from . import magic
+
+
+@dataclasses.dataclass
+class MaterialData:
+    tex0: Optional[bpy.types.Image]
 
 
 @dataclasses.dataclass
@@ -16,7 +23,8 @@ class MeshData:
     loops_co: np.ndarray
     loops_normal: np.ndarray
     loops_color: np.ndarray
-    dbgTestColor: tuple[float, float, float, float]
+    loops_uv: Optional[np.ndarray]
+    material: Optional[MaterialData]
 
 
 @dataclasses.dataclass
@@ -102,6 +110,13 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
                     else:
                         raise NotImplementedError(active_color_attribute.data_type)
 
+                active_uv_layer = mesh.uv_layers.active
+                if active_uv_layer is None:
+                    loops_uv = None
+                else:
+                    loops_uv = np.empty((len(mesh.loops), 2), dtype=np.float32)
+                    active_uv_layer.data.foreach_get("uv", loops_uv.ravel())
+
                 loop_triangles_material_index = np.empty(
                     len(mesh.loop_triangles), dtype=np.int32
                 )
@@ -122,6 +137,15 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
                         mat = obj.material_slots[mat_index].material
                     else:
                         mat = None
+
+                    if mat is not None:
+                        mat_rdpq = util.LIBDRAGON_RDPQ(mat)
+                        tex0 = (
+                            mat_rdpq.texture0.image if mat_rdpq.use_texture0 else None
+                        )
+                        mat_data = MaterialData(tex0)
+                    else:
+                        mat_data = None
 
                     # Get the loops indices for the triangles using mat
                     np.equal(loop_triangles_material_index, mat_index, out=mat_mask)
@@ -147,10 +171,11 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
                             loops_normal[mat_used_loops, :],
                             loops_color[mat_used_loops, :],
                             (
-                                (*util.LIBDRAGON_RDPQ(mat).blender.blend_color, 1)
-                                if mat is not None
-                                else (1, 0, 0, 1)
+                                loops_uv[mat_used_loops, :]
+                                if loops_uv is not None
+                                else None
                             ),
+                            mat_data,
                         )
                     )
 
@@ -162,9 +187,14 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
 
         import gpu
 
+        magic_glsl = "".join(
+            f"#define {_name} {getattr(magic, _name)}\n"
+            for _name in dir(magic)
+            if not _name.startswith("_")
+        )
         vert = (Path(__file__).parent / "shader.vert").read_text()
         frag = (Path(__file__).parent / "shader.frag").read_text()
-        shader = gpu.types.GPUShader(vert, frag)
+        shader = gpu.types.GPUShader(magic_glsl + vert, magic_glsl + frag)
 
         self.shader = shader
 
@@ -192,15 +222,31 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
                 "matMV",
                 context.region_data.view_matrix @ mesh.model_matrix,
             )
-            self.shader.uniform_float("dbgTestColor", mesh.dbgTestColor)
+
+            valid_inputs_flags = 0
+
+            if mesh.material is not None and mesh.material.tex0 is not None:
+                valid_inputs_flags |= magic.VALID_IN_TEX0
+                self.shader.uniform_sampler(
+                    "inTex0", gpu.texture.from_image(mesh.material.tex0)
+                )
+
+            content = {
+                "inPos": mesh.loops_co,
+                "inNormal": mesh.loops_normal,
+                "inColor": mesh.loops_color,
+            }
+
+            if mesh.loops_uv is not None:
+                valid_inputs_flags |= magic.VALID_IN_UV
+                content["inUV"] = mesh.loops_uv
+
+            self.shader.uniform_int("inValidInputs", valid_inputs_flags)
+
             batch: gpu.types.GPUBatch = gpu_extras.batch.batch_for_shader(
                 self.shader,
                 "TRIS",
-                {
-                    "inPos": mesh.loops_co,
-                    "inNormal": mesh.loops_normal,
-                    "inColor": mesh.loops_color,
-                },
+                content,
                 indices=mesh.loop_triangles_loops,
             )
             batch.draw(self.shader)
