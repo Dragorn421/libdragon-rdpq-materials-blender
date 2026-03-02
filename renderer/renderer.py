@@ -1,6 +1,6 @@
 import dataclasses
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Sequence
 
 import bpy
 import mathutils
@@ -14,6 +14,7 @@ from . import magic
 @dataclasses.dataclass
 class MaterialData:
     tex0: Optional[bpy.types.Image]
+    combiner_words: Sequence[int]
 
 
 @dataclasses.dataclass
@@ -30,6 +31,30 @@ class MeshData:
 @dataclasses.dataclass
 class SceneData:
     meshes: list[MeshData] = dataclasses.field(default_factory=list)
+
+
+COMBINER_MAP = {
+    "0": magic.COMBINER_0,
+    "1": magic.COMBINER_1,
+    "ENV": magic.COMBINER_ENV,
+    "ENV_ALPHA": magic.COMBINER_ENV_ALPHA,
+    "K4": magic.COMBINER_K4,
+    "K5": magic.COMBINER_K5,
+    "KEYCENTER": magic.COMBINER_KEYCENTER,
+    "KEYSCALE": magic.COMBINER_KEYSCALE,
+    "LOD_FRAC": magic.COMBINER_LOD_FRAC,
+    "NOISE": magic.COMBINER_NOISE,
+    "PRIM": magic.COMBINER_PRIM,
+    "PRIM_ALPHA": magic.COMBINER_PRIM_ALPHA,
+    "PRIM_LOD_F": magic.COMBINER_PRIM_LOD_FRAC,
+    "SHADE": magic.COMBINER_SHADE,
+    "SHADE_ALPH": magic.COMBINER_SHADE_ALPHA,
+    "TEX0": magic.COMBINER_TEX0,
+    "TEX0_ALPHA": magic.COMBINER_TEX0_ALPHA,
+    "TEX1": magic.COMBINER_TEX1,
+    "TEX1_ALPHA": magic.COMBINER_TEX1_ALPHA,
+    "COMBINED": magic.COMBINER_COMBINED,
+}
 
 
 class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
@@ -143,7 +168,51 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
                         tex0 = (
                             mat_rdpq.texture0.image if mat_rdpq.use_texture0 else None
                         )
-                        mat_data = MaterialData(tex0)
+                        combiner_words = [0, 0, 0, 0]
+                        for slot, shift, word in (
+                            (
+                                mat_rdpq.combiner.rgb_A_0,
+                                magic.COMBINER_RGB_2A_SUBA_SHIFT,
+                                magic.COMBINER_RGB_2A_SUBA_WORD,
+                            ),
+                            (
+                                mat_rdpq.combiner.rgb_B_0,
+                                magic.COMBINER_RGB_2A_SUBB_SHIFT,
+                                magic.COMBINER_RGB_2A_SUBB_WORD,
+                            ),
+                            (
+                                mat_rdpq.combiner.rgb_C_0,
+                                magic.COMBINER_RGB_2A_MUL_SHIFT,
+                                magic.COMBINER_RGB_2A_MUL_WORD,
+                            ),
+                            (
+                                mat_rdpq.combiner.rgb_D_0,
+                                magic.COMBINER_RGB_2A_ADD_SHIFT,
+                                magic.COMBINER_RGB_2A_ADD_WORD,
+                            ),
+                            (
+                                mat_rdpq.combiner.rgb_A_1,
+                                magic.COMBINER_RGB_2B_SUBA_SHIFT,
+                                magic.COMBINER_RGB_2B_SUBA_WORD,
+                            ),
+                            (
+                                mat_rdpq.combiner.rgb_B_1,
+                                magic.COMBINER_RGB_2B_SUBB_SHIFT,
+                                magic.COMBINER_RGB_2B_SUBB_WORD,
+                            ),
+                            (
+                                mat_rdpq.combiner.rgb_C_1,
+                                magic.COMBINER_RGB_2B_MUL_SHIFT,
+                                magic.COMBINER_RGB_2B_MUL_WORD,
+                            ),
+                            (
+                                mat_rdpq.combiner.rgb_D_1,
+                                magic.COMBINER_RGB_2B_ADD_SHIFT,
+                                magic.COMBINER_RGB_2B_ADD_WORD,
+                            ),
+                        ):
+                            combiner_words[word] |= COMBINER_MAP[slot] << shift
+                        mat_data = MaterialData(tex0, combiner_words)
                     else:
                         mat_data = None
 
@@ -225,11 +294,15 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
 
             valid_inputs_flags = 0
 
-            if mesh.material is not None and mesh.material.tex0 is not None:
-                valid_inputs_flags |= magic.VALID_IN_TEX0
-                self.shader.uniform_sampler(
-                    "inTex0", gpu.texture.from_image(mesh.material.tex0)
-                )
+            if mesh.material is not None:
+                mat = mesh.material
+                if mat.tex0 is not None:
+                    valid_inputs_flags |= magic.VALID_IN_TEX0
+                    self.shader.uniform_sampler(
+                        "inTex0", gpu.texture.from_image(mat.tex0)
+                    )
+                valid_inputs_flags |= magic.VALID_IN_COMBINER
+                self.shader.uniform_int("inCombiner", mat.combiner_words)
 
             content = {
                 "inPos": mesh.loops_co,
