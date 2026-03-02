@@ -18,7 +18,7 @@ vec3 linearToGamma(in vec3 color) {
 void main()
 {
     gl_Position = matMVP * vec4(inPos, 1.0);
-    float i = max(0, dot(mat3(matMV) * inNormal, vec3(0, 0, 1)));
+    float i = max(0, dot(normalize(mat3(matMV) * inNormal), vec3(0, 0, 1)));
     shadeColor = inColor * vec4(i, i, i, 1.0);
     shadeColor.rgb = linearToGamma(shadeColor.rgb);
 }
