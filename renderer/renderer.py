@@ -231,7 +231,7 @@ def draw_mesh(
     view_mtx: mathutils.Matrix,
 ):
     import gpu
-    import gpu_extras
+    import gpu_extras.batch
 
     valid_inputs_flags = 0
 
@@ -277,12 +277,126 @@ def draw_mesh(
 class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
     bl_idname = "LIBDRAGON_RDPQ_MATERIALS"
     bl_label = "libdragon RDPQ materials"
-    bl_use_preview = False
+    bl_use_preview = True
+    bl_use_gpu_context = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.scene_data = SceneData()
         self.shader = None
+
+    def render(self, depsgraph: bpy.types.Depsgraph):
+        if not self.is_preview:
+            return
+
+        scene = depsgraph.scene
+        assert scene is not None
+
+        scale = scene.render.resolution_percentage / 100
+        width = int(scene.render.resolution_x * scale)
+        height = int(scene.render.resolution_y * scale)
+
+        # For preview renders, Blender passes in a mock scene with a bunch of mesh
+        # objects and other stuff. We find the material being previewed by looking in
+        # one of those mesh objects.
+        obj = scene.objects.get("preview_flat")
+        if obj is None:
+            print(
+                "[RDPQMaterialsRenderEngine] "
+                "did not find preview_flat object in the mock scene"
+            )
+            return
+
+        mat = obj.material_slots[obj.data.polygons[0].material_index].material
+        if mat is None:
+            print(
+                "[RDPQMaterialsRenderEngine] "
+                "did not find material on the preview_flat object in the mock scene"
+            )
+            return
+
+        import gpu
+
+        offscreen = gpu.types.GPUOffScreen(width, height, format="RGBA8")
+
+        self.init_shader()
+        assert self.shader is not None
+
+        with offscreen.bind():
+            gpu.state.viewport_set(0, 0, width, height)
+            gpu.state.blend_set("ALPHA")  # ?
+
+            gpu.matrix.load_matrix(mathutils.Matrix.Identity(4))
+            gpu.matrix.load_projection_matrix(mathutils.Matrix.Identity(4))
+
+            gpu.state.depth_test_set("NONE")
+            gpu.state.depth_mask_set(False)
+
+            fb = gpu.state.active_framebuffer_get()
+            fb: gpu.types.GPUFrameBuffer
+            fb.clear(color=(0.1, 0.1, 0.1, 1))
+
+            mat_data = get_material_data(mat)
+
+            # Draw a full-viewport plane
+            # y ^
+            #   |
+            #   +--> x
+            #
+            #   0--3
+            #   |  |
+            #   1--2
+            draw_mesh(
+                MeshData(
+                    mathutils.Matrix.Identity(4),
+                    np.array(
+                        ((0, 1, 3), (3, 1, 2)),
+                        dtype=np.int32,
+                    ),
+                    np.array(
+                        ((-1, 1, 0), (-1, -1, 0), (1, -1, 0), (1, 1, 0)),
+                        dtype=np.float32,
+                    ),
+                    np.array(
+                        ((0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)),
+                        dtype=np.float32,
+                    ),
+                    np.array(
+                        ((1, 1, 1, 1), (1, 1, 1, 1), (1, 1, 1, 1), (1, 1, 1, 1)),
+                        dtype=np.float32,
+                    ),
+                    np.array(
+                        ((0, 1), (0, 0), (1, 0), (1, 1)),
+                        dtype=np.float32,
+                    ),
+                    mat_data,
+                ),
+                self.shader,
+                mathutils.Matrix.Identity(4),
+                mathutils.Matrix.Identity(4),
+            )
+
+        pixel_data = offscreen.texture_color.read()
+        try:
+            # This works in Blender 3.2.2 (and possibly later versions)
+            # (at least on my system/install)
+            pixels = np.frombuffer(pixel_data, dtype=np.uint8).astype(np.float32) / 255
+        except BufferError:
+            # In Blender 5.0.1 (and possible earlier versions) (at least on my
+            # system/install), the following error happens:
+            # BufferError: memoryview: underlying buffer is not C-contiguous
+            pixels = None
+        if pixels is None:
+            pixels = np.empty(pixel_data.dimensions, dtype=np.float32)
+            for y in range(height):
+                for x in range(width):
+                    pixels[y][x] = pixel_data[y][x]
+            pixels /= 255
+
+        result = self.begin_result(0, 0, width, height)
+        layer = result.layers[0].passes["Combined"]
+        layer.rect = pixels.reshape(-1, 4)
+        self.end_result(result)
 
     def view_update(self, context, depsgraph):
         assert depsgraph is not None
