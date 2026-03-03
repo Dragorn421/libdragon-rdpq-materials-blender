@@ -1,5 +1,6 @@
 import dataclasses
 from pathlib import Path
+import struct
 from typing import Optional, Sequence, TYPE_CHECKING
 
 import bpy
@@ -117,7 +118,8 @@ def get_mesh_data(obj: bpy.types.Object, depsgraph: bpy.types.Depsgraph):
     obj_eval = obj.evaluated_get(depsgraph)
     mesh = obj_eval.to_mesh()
     mesh.calc_loop_triangles()
-    mesh.calc_normals_split()
+    if bpy.app.version < (4, 1, 0):
+        mesh.calc_normals_split()
 
     model_matrix = obj.matrix_world
 
@@ -175,7 +177,8 @@ def get_mesh_data(obj: bpy.types.Object, depsgraph: bpy.types.Depsgraph):
 
     loops_co = vertices_co[loops_vertex_index, :]
 
-    mesh.free_normals_split()
+    if bpy.app.version < (4, 1, 0):
+        mesh.free_normals_split()
     obj_eval.to_mesh_clear()
 
     mat_mask = np.empty_like(loop_triangles_material_index, dtype=bool)
@@ -230,9 +233,6 @@ def draw_mesh(
     import gpu
     import gpu_extras
 
-    shader.uniform_float("matMVP", proj_view_mtx @ mesh.model_matrix)
-    shader.uniform_float("matMV", view_mtx @ mesh.model_matrix)
-
     valid_inputs_flags = 0
 
     if mesh.material is not None:
@@ -241,7 +241,9 @@ def draw_mesh(
             valid_inputs_flags |= magic.VALID_IN_TEX0
             shader.uniform_sampler("inTex0", gpu.texture.from_image(mat.tex0))
         valid_inputs_flags |= magic.VALID_IN_COMBINER
-        shader.uniform_int("inCombiner", mat.combiner_words)
+        combiner_words = mat.combiner_words
+    else:
+        combiner_words = (0, 0, 0, 0)
 
     content = {
         "inPos": mesh.loops_co,
@@ -253,7 +255,15 @@ def draw_mesh(
         valid_inputs_flags |= magic.VALID_IN_UV
         content["inUV"] = mesh.loops_uv
 
-    shader.uniform_int("inValidInputs", valid_inputs_flags)
+    data = struct.pack(
+        "16f 16f 4i i 12x",
+        *np.array(proj_view_mtx @ mesh.model_matrix).T.ravel(),
+        *np.array(view_mtx @ mesh.model_matrix).T.ravel(),
+        *combiner_words,
+        valid_inputs_flags,
+    )
+    ubo = gpu.types.GPUUniformBuf(data)
+    shader.uniform_block("inState", ubo)
 
     batch: gpu.types.GPUBatch = gpu_extras.batch.batch_for_shader(
         shader,
@@ -269,7 +279,8 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
     bl_label = "libdragon RDPQ materials"
     bl_use_preview = False
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.scene_data = SceneData()
         self.shader = None
 
@@ -295,14 +306,41 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
 
         import gpu
 
-        magic_glsl = "".join(
-            f"#define {_name} {getattr(magic, _name)}\n"
-            for _name in dir(magic)
-            if not _name.startswith("_")
-        )
         vert = (Path(__file__).parent / "shader.vert").read_text()
         frag = (Path(__file__).parent / "shader.frag").read_text()
-        shader = gpu.types.GPUShader(magic_glsl + vert, magic_glsl + frag)
+
+        shader_info = gpu.types.GPUShaderCreateInfo()
+        for name in dir(magic):
+            if not name.startswith("_"):
+                v = getattr(magic, name)
+                shader_info.define(name, str(v))
+        shader_info.typedef_source(
+            "struct state_struct {"
+            " mat4 matMVP;"
+            " mat4 matMV;"
+            " ivec4 combiner;"
+            " int validInputs;"
+            "};"
+        )
+        shader_info.uniform_buf(0, "state_struct", "inState")
+
+        shader_info.vertex_in(0, "VEC3", "inPos")
+        shader_info.vertex_in(1, "VEC3", "inNormal")
+        shader_info.vertex_in(2, "VEC4", "inColor")
+        shader_info.vertex_in(3, "VEC2", "inUV")
+
+        shader_info.sampler(0, "FLOAT_2D", "inTex0")
+
+        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
+        vert_out.smooth("VEC4", "shadeColor")
+        vert_out.smooth("VEC2", "uv")
+        shader_info.vertex_out(vert_out)
+
+        shader_info.fragment_out(0, "VEC4", "FragColor")
+
+        shader_info.vertex_source(vert)
+        shader_info.fragment_source(frag)
+        shader = gpu.shader.create_from_info(shader_info)
 
         self.shader = shader
 

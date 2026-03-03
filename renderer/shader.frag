@@ -1,12 +1,3 @@
-uniform int inValidInputs;
-uniform sampler2D inTex0;
-uniform ivec4 inCombiner;
-
-in vec4 shadeColor;
-in vec2 uv;
-
-out vec4 FragColor;
-
 vec3 gammaToLinear(in vec3 color) {
     return mix(
         color * (1.0 / 12.92),
@@ -17,10 +8,10 @@ vec3 gammaToLinear(in vec3 color) {
 
 int getCombinerWord(int word) {
     switch (word) {
-        case 0: return inCombiner.x;
-        case 1: return inCombiner.y;
-        case 2: return inCombiner.z;
-        case 3: return inCombiner.w;
+        case 0: return inState.combiner.x;
+        case 1: return inState.combiner.y;
+        case 2: return inState.combiner.z;
+        case 3: return inState.combiner.w;
     }
 }
 
@@ -33,34 +24,36 @@ int getCombinerWord(int word) {
 #define COMBINER_RGB_2B_MUL ((getCombinerWord(COMBINER_RGB_2B_MUL_WORD) >> COMBINER_RGB_2B_MUL_SHIFT) & COMBINER_MASK)
 #define COMBINER_RGB_2B_ADD ((getCombinerWord(COMBINER_RGB_2B_ADD_WORD) >> COMBINER_RGB_2B_ADD_SHIFT) & COMBINER_MASK)
 
+#define MISSING_COLOR vec4(1, 0, 1, 1)
+
 vec4 texture_wrap(sampler2D tex, vec2 uv) {
-    if ((inValidInputs & VALID_IN_TEX0) != 0 && (inValidInputs & VALID_IN_UV) != 0)
+    if ((inState.validInputs & VALID_IN_TEX0) != 0 && (inState.validInputs & VALID_IN_UV) != 0)
         return texture(tex, uv);
     else
-        return vec4(1, 0, 1, 1);
+        return MISSING_COLOR;
 }
 
 vec3 combinerEvaluateSlotRGB(int slot, vec3 prevCycleCombined) {
     switch (slot) {
         case COMBINER_0: return vec3(0);
         case COMBINER_1: return vec3(1);
-        case COMBINER_ENV: return vec3(0); // TODO
-        case COMBINER_ENV_ALPHA: return vec3(0); // TODO
-        case COMBINER_K4: return vec3(0); // TODO
-        case COMBINER_K5: return vec3(0); // TODO
-        case COMBINER_KEYCENTER: return vec3(0); // TODO
-        case COMBINER_KEYSCALE: return vec3(0); // TODO
-        case COMBINER_LOD_FRAC: return vec3(0); // TODO
-        case COMBINER_NOISE: return vec3(0); // TODO
-        case COMBINER_PRIM: return vec3(0); // TODO
-        case COMBINER_PRIM_ALPHA: return vec3(0); // TODO
-        case COMBINER_PRIM_LOD_FRAC: return vec3(0); // TODO
+        case COMBINER_ENV: return MISSING_COLOR.rgb; // TODO
+        case COMBINER_ENV_ALPHA: return MISSING_COLOR.rgb; // TODO
+        case COMBINER_K4: return MISSING_COLOR.rgb; // TODO
+        case COMBINER_K5: return MISSING_COLOR.rgb; // TODO
+        case COMBINER_KEYCENTER: return MISSING_COLOR.rgb; // TODO
+        case COMBINER_KEYSCALE: return MISSING_COLOR.rgb; // TODO
+        case COMBINER_LOD_FRAC: return MISSING_COLOR.rgb; // TODO
+        case COMBINER_NOISE: return MISSING_COLOR.rgb; // TODO
+        case COMBINER_PRIM: return MISSING_COLOR.rgb; // TODO
+        case COMBINER_PRIM_ALPHA: return MISSING_COLOR.rgb; // TODO
+        case COMBINER_PRIM_LOD_FRAC: return MISSING_COLOR.rgb; // TODO
         case COMBINER_SHADE: return gammaToLinear(shadeColor.rgb);
         case COMBINER_SHADE_ALPHA: return vec3(shadeColor.a);
         case COMBINER_TEX0: return texture_wrap(inTex0, uv).rgb;
         case COMBINER_TEX0_ALPHA: return vec3(texture_wrap(inTex0, uv).a);
-        case COMBINER_TEX1: return vec3(0); // TODO
-        case COMBINER_TEX1_ALPHA: return vec3(0); // TODO
+        case COMBINER_TEX1: return MISSING_COLOR.rgb; // TODO
+        case COMBINER_TEX1_ALPHA: return MISSING_COLOR.rgb; // TODO
         case COMBINER_COMBINED: return prevCycleCombined;
     }
 }
