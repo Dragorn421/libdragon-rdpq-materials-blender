@@ -536,17 +536,17 @@ class RDPQMaterialBlenderProperties(bpy.types.PropertyGroup):
     )
     a: bpy.props.EnumProperty(
         name="A",
-        description="Blender input A (first cycle)",
+        description="Blender input A",
         items=BLEND1_B1_ITEMS,
     )
     q: bpy.props.EnumProperty(
         name="Q",
-        description="Blender input Q (first cycle)",
+        description="Blender input Q",
         items=BLEND1_A_ITEMS,
     )
     b: bpy.props.EnumProperty(
         name="B",
-        description="Blender input B (first cycle)",
+        description="Blender input B",
         items=BLEND1_B2_ITEMS,
     )
 
