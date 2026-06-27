@@ -107,6 +107,36 @@ class RDPQMaterialTextureProperties(bpy.types.PropertyGroup):
         return self.t_
 
 
+class RDPQMaterialCombinerRegistersProperties(bpy.types.PropertyGroup):
+    k4: bpy.props.FloatProperty(name="K4", min=0, max=1)
+    k5: bpy.props.FloatProperty(name="K5", min=0, max=1)
+    # TODO keyscale, keycenter
+    prim_lod_frac: bpy.props.FloatProperty(
+        name="Prim LOD Frac",
+        description="Primitive LOD fraction",
+        min=0,
+        max=1,
+    )
+    env: bpy.props.FloatVectorProperty(
+        name="Env",
+        description="Environment color",
+        default=(1, 1, 1, 1),
+        min=0,
+        max=1,
+        subtype="COLOR",
+        size=4,
+    )
+    prim: bpy.props.FloatVectorProperty(
+        name="Prim",
+        description="Primitive color",
+        default=(1, 1, 1, 1),
+        min=0,
+        max=1,
+        subtype="COLOR",
+        size=4,
+    )
+
+
 # One-cycle combiner slots
 
 COMB1_RGB_SUBA_ITEMS = (
@@ -460,6 +490,12 @@ class RDPQMaterialCombinerProperties(bpy.types.PropertyGroup):
         description="Alpha D Input (Second Cycle)",
         items=COMB2B_ALPHA_ADDSUB_ITEMS,
     )
+
+    registers_: bpy.props.PointerProperty(type=RDPQMaterialCombinerRegistersProperties)
+
+    @property
+    def registers(self) -> RDPQMaterialCombinerRegistersProperties:
+        return self.registers_
 
 
 BLEND1_A_ITEMS = (
@@ -862,7 +898,18 @@ LIBDRAGON_RDPQ_PROPS_LIST = RecursivePropsList(
                         "alpha_C_1",
                         "alpha_D_1",
                     ),
-                    {},
+                    {
+                        "registers": RecursivePropsList(
+                            (
+                                "k4",
+                                "k5",
+                                "prim_lod_frac",
+                                "env",
+                                "prim",
+                            ),
+                            {},
+                        )
+                    },
                 ),
                 "blender": RecursivePropsList(
                     (

@@ -264,6 +264,15 @@ def rdpq_material_props_to_fast64_props(
         mat_rdpq.combiner.alpha_D_1
     ]
 
+    mat_fast64.set_k0_5 = True
+    mat_fast64.k4 = mat_rdpq.combiner.registers.k4
+    mat_fast64.k5 = mat_rdpq.combiner.registers.k5
+    mat_fast64.set_prim = True
+    mat_fast64.prim_lod_frac = mat_rdpq.combiner.registers.prim_lod_frac
+    mat_fast64.prim_color = mat_rdpq.combiner.registers.prim
+    mat_fast64.set_env = True
+    mat_fast64.env_color = mat_rdpq.combiner.registers.env
+
     # Blender
 
     # TODO handle one-cycle props

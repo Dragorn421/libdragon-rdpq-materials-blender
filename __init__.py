@@ -411,6 +411,11 @@ class RDPQMaterialPanel(bpy.types.Panel):
             box.prop(mat_rdpq.combiner, "alpha_B_1")
             box.prop(mat_rdpq.combiner, "alpha_C_1")
             box.prop(mat_rdpq.combiner, "alpha_D_1")
+        prop_split(box, mat_rdpq.combiner.registers, "k4")
+        prop_split(box, mat_rdpq.combiner.registers, "k5")
+        prop_split(box, mat_rdpq.combiner.registers, "prim_lod_frac")
+        prop_split(box, mat_rdpq.combiner.registers, "env")
+        prop_split(box, mat_rdpq.combiner.registers, "prim")
 
         box = layout.box()
         prop_split(box, mat_rdpq.blender, "preset")
@@ -467,6 +472,7 @@ classes = (
     RDPQWorldProperties,
     rdpq_material_props.RDPQMaterialTextureAxisProperties,
     rdpq_material_props.RDPQMaterialTextureProperties,
+    rdpq_material_props.RDPQMaterialCombinerRegistersProperties,
     rdpq_material_props.RDPQMaterialCombinerProperties,
     rdpq_material_props.RDPQMaterialBlenderProperties,
     rdpq_material_props.RDPQMaterialOverrideRenderModeProperties,
