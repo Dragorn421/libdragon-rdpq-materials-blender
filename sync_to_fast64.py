@@ -106,19 +106,21 @@ COMBINER_1_MUXES_FAST64_MAP.update(
 
 
 class WORLD_RDPQ_DEFAULTS_DEFAULTS:
-    antialias = "STANDARD"
-    fog = "STANDARD"
-    dithering = "RGB_SQUARE_A_SQUARE"
-    texture_filtering = "BILINEAR"
-    texture_perspective_correction = True
-    alpha_compare = False
-    alpha_compare_threshold = 127
-    z_compare = True
-    z_update = True
-    fixed_z = False
-    fixed_z_value = 0
-    fixed_z_deltaz = 0
     placeholders = []
+
+    class render_mode:
+        antialias = "STANDARD"
+        fog = "STANDARD"
+        dithering = "RGB_SQUARE_A_SQUARE"
+        texture_filtering = "BILINEAR"
+        texture_perspective_correction = True
+        alpha_compare = False
+        alpha_compare_threshold = 127
+        z_compare = True
+        z_update = True
+        fixed_z = False
+        fixed_z_value = 0
+        fixed_z_deltaz = 0
 
 
 def rdpq_material_props_to_fast64_props(
@@ -297,13 +299,13 @@ def rdpq_material_props_to_fast64_props(
     if mat_rdpq.override_render_mode.override_antialias:
         mat_rdpq.override_render_mode.antialias
     else:
-        world_rdpq_defaults.antialias
+        world_rdpq_defaults.render_mode.antialias
 
     # TODO
     if mat_rdpq.override_render_mode.override_fog:
         mat_rdpq.override_render_mode.fog
     else:
-        world_rdpq_defaults.fog
+        world_rdpq_defaults.render_mode.fog
 
     (
         mat_fast64.rdp_settings.g_mdsft_rgb_dither,
@@ -330,7 +332,7 @@ def rdpq_material_props_to_fast64_props(
         (
             mat_rdpq.override_render_mode.dithering
             if mat_rdpq.override_render_mode.override_dithering
-            else world_rdpq_defaults.dithering
+            else world_rdpq_defaults.render_mode.dithering
         )
     ]
 
@@ -342,7 +344,7 @@ def rdpq_material_props_to_fast64_props(
         (
             mat_rdpq.override_render_mode.texture_filtering
             if mat_rdpq.override_render_mode.override_texture_filtering
-            else world_rdpq_defaults.texture_filtering
+            else world_rdpq_defaults.render_mode.texture_filtering
         )
     ]
 
@@ -351,7 +353,7 @@ def rdpq_material_props_to_fast64_props(
         if (
             mat_rdpq.override_render_mode.texture_perspective_correction
             if mat_rdpq.override_render_mode.override_texture_perspective_correction
-            else world_rdpq_defaults.texture_perspective_correction
+            else world_rdpq_defaults.render_mode.texture_perspective_correction
         )
         else "G_TP_NONE"
     )
@@ -360,9 +362,11 @@ def rdpq_material_props_to_fast64_props(
         mat_fast64.rdp_settings.g_mdsft_alpha_compare = "G_AC_THRESHOLD"
         alpha_compare_threshold = mat_rdpq.override_render_mode.alpha_compare_threshold
     else:
-        if world_rdpq_defaults.alpha_compare:
+        if world_rdpq_defaults.render_mode.alpha_compare:
             mat_fast64.rdp_settings.g_mdsft_alpha_compare = "G_AC_THRESHOLD"
-            alpha_compare_threshold = world_rdpq_defaults.alpha_compare_threshold
+            alpha_compare_threshold = (
+                world_rdpq_defaults.render_mode.alpha_compare_threshold
+            )
         else:
             mat_fast64.rdp_settings.g_mdsft_alpha_compare = "G_AC_NONE"
             alpha_compare_threshold = None
@@ -376,13 +380,13 @@ def rdpq_material_props_to_fast64_props(
     mat_fast64.rdp_settings.z_cmp = (
         mat_rdpq.override_render_mode.z_compare
         if mat_rdpq.override_render_mode.override_z_compare_and_z_update
-        else world_rdpq_defaults.z_compare
+        else world_rdpq_defaults.render_mode.z_compare
     )
 
     mat_fast64.rdp_settings.z_upd = (
         mat_rdpq.override_render_mode.z_update
         if mat_rdpq.override_render_mode.override_z_compare_and_z_update
-        else world_rdpq_defaults.z_update
+        else world_rdpq_defaults.render_mode.z_update
     )
 
     if mat_rdpq.override_render_mode.override_fixed_z:
@@ -392,10 +396,14 @@ def rdpq_material_props_to_fast64_props(
             mat_rdpq.override_render_mode.fixed_z_deltaz
         )
     else:
-        if world_rdpq_defaults.fixed_z:
+        if world_rdpq_defaults.render_mode.fixed_z:
             mat_fast64.rdp_settings.g_mdsft_zsrcsel = "G_ZS_PRIM"
-            mat_fast64.rdp_settings.prim_depth.z = world_rdpq_defaults.fixed_z_value
-            mat_fast64.rdp_settings.prim_depth.dz = world_rdpq_defaults.fixed_z_deltaz
+            mat_fast64.rdp_settings.prim_depth.z = (
+                world_rdpq_defaults.render_mode.fixed_z_value
+            )
+            mat_fast64.rdp_settings.prim_depth.dz = (
+                world_rdpq_defaults.render_mode.fixed_z_deltaz
+            )
         else:
             mat_fast64.rdp_settings.g_mdsft_zsrcsel = "G_ZS_PIXEL"
 

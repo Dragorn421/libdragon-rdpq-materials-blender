@@ -63,7 +63,7 @@ class RDPQWorldDefaultsPlaceholderProperties(bpy.types.PropertyGroup):
     )
 
 
-class RDPQWorldDefaultsProperties(bpy.types.PropertyGroup):
+class RDPQWorldDefaultsRenderModeProperties(bpy.types.PropertyGroup):
     antialias: bpy.props.EnumProperty(
         name="Antialias",
         description="",
@@ -163,9 +163,17 @@ class RDPQWorldDefaultsProperties(bpy.types.PropertyGroup):
         max=32767,
     )
 
+
+class RDPQWorldDefaultsProperties(bpy.types.PropertyGroup):
     placeholders: bpy.props.CollectionProperty(
         type=RDPQWorldDefaultsPlaceholderProperties,
     )
+
+    render_mode_: bpy.props.PointerProperty(type=RDPQWorldDefaultsRenderModeProperties)
+
+    @property
+    def render_mode(self) -> RDPQWorldDefaultsRenderModeProperties:
+        return self.render_mode_
 
 
 class RDPQWorldProperties(bpy.types.PropertyGroup):
@@ -238,28 +246,29 @@ class RDPQWorldPanel(bpy.types.Panel):
         world = context.world
         assert world is not None
         world_rdpq = util.LIBDRAGON_RDPQ(world)
+        wdrm = world_rdpq.defaults.render_mode
 
-        layout.prop(world_rdpq.defaults, "antialias")
-        layout.prop(world_rdpq.defaults, "fog")
-        layout.prop(world_rdpq.defaults, "dithering")
-        layout.prop(world_rdpq.defaults, "texture_filtering")
-        layout.prop(world_rdpq.defaults, "texture_perspective_correction")
-
-        row = layout.row()
-        row.prop(world_rdpq.defaults, "alpha_compare", text="")
-        col = row.column()
-        col.prop(world_rdpq.defaults, "alpha_compare_threshold")
-        col.enabled = world_rdpq.defaults.alpha_compare
-
-        layout.prop(world_rdpq.defaults, "z_compare")
-        layout.prop(world_rdpq.defaults, "z_update")
+        layout.prop(wdrm, "antialias")
+        layout.prop(wdrm, "fog")
+        layout.prop(wdrm, "dithering")
+        layout.prop(wdrm, "texture_filtering")
+        layout.prop(wdrm, "texture_perspective_correction")
 
         row = layout.row()
-        row.prop(world_rdpq.defaults, "fixed_z")
+        row.prop(wdrm, "alpha_compare", text="")
         col = row.column()
-        col.prop(world_rdpq.defaults, "fixed_z_value")
-        col.prop(world_rdpq.defaults, "fixed_z_deltaz")
-        col.enabled = world_rdpq.defaults.fixed_z
+        col.prop(wdrm, "alpha_compare_threshold")
+        col.enabled = wdrm.alpha_compare
+
+        layout.prop(wdrm, "z_compare")
+        layout.prop(wdrm, "z_update")
+
+        row = layout.row()
+        row.prop(wdrm, "fixed_z")
+        col = row.column()
+        col.prop(wdrm, "fixed_z_value")
+        col.prop(wdrm, "fixed_z_deltaz")
+        col.enabled = wdrm.fixed_z
 
         box = layout.box()
         box.label(text="Placeholders")
@@ -468,6 +477,7 @@ classes = (
     gltf_extension.glTFExtensionProperties,
     RDPQSceneProperties,
     RDPQWorldDefaultsPlaceholderProperties,
+    RDPQWorldDefaultsRenderModeProperties,
     RDPQWorldDefaultsProperties,
     RDPQWorldProperties,
     rdpq_material_props.RDPQMaterialTextureAxisProperties,
