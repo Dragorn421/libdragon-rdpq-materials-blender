@@ -875,6 +875,7 @@ LIBDRAGON_RDPQ_PROPS_LIST = RecursivePropsList(
             ),
             {
                 "texture0": LIBDRAGON_RDPQ_TEXTURE_PROPS_LIST,
+                "texture1": LIBDRAGON_RDPQ_TEXTURE_PROPS_LIST,
                 "combiner": RecursivePropsList(
                     (
                         "preset",
