@@ -3,6 +3,11 @@
 VALID_IN_TEX0 = 1 << 0
 VALID_IN_UV = 1 << 1
 VALID_IN_COMBINER = 1 << 2
+VALID_IN_COMBINER_REG_K4 = 1 << 3
+VALID_IN_COMBINER_REG_K5 = 1 << 4
+VALID_IN_COMBINER_REG_PRIM_LOD_FRAC = 1 << 5
+VALID_IN_COMBINER_REG_ENV = 1 << 6
+VALID_IN_COMBINER_REG_PRIM = 1 << 7
 
 # Each combiner slot value is given 5 bits
 # _WORD is the int in which the value is stored (0 is .x, 1 is .y, ...)

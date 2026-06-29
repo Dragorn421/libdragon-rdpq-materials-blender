@@ -37,17 +37,17 @@ vec3 combinerEvaluateSlotRGB(int slot, vec3 prevCycleCombined) {
     switch (slot) {
         case COMBINER_0: return vec3(0);
         case COMBINER_1: return vec3(1);
-        case COMBINER_ENV: return MISSING_COLOR.rgb; // TODO
-        case COMBINER_ENV_ALPHA: return MISSING_COLOR.rgb; // TODO
-        case COMBINER_K4: return MISSING_COLOR.rgb; // TODO
-        case COMBINER_K5: return MISSING_COLOR.rgb; // TODO
+        case COMBINER_ENV: return (inState.validInputs & VALID_IN_COMBINER_REG_ENV) != 0 ? inState.combinerRegEnv.rgb : MISSING_COLOR.rgb;
+        case COMBINER_ENV_ALPHA: return (inState.validInputs & VALID_IN_COMBINER_REG_ENV) != 0 ? vec3(inState.combinerRegEnv.a) : MISSING_COLOR.rgb;
+        case COMBINER_K4: return (inState.validInputs & VALID_IN_COMBINER_REG_K4) != 0 ? vec3(inState.combinerRegK4) : MISSING_COLOR.rgb;
+        case COMBINER_K5: return (inState.validInputs & VALID_IN_COMBINER_REG_K5) != 0 ? vec3(inState.combinerRegK5) : MISSING_COLOR.rgb;
         case COMBINER_KEYCENTER: return MISSING_COLOR.rgb; // TODO
         case COMBINER_KEYSCALE: return MISSING_COLOR.rgb; // TODO
         case COMBINER_LOD_FRAC: return MISSING_COLOR.rgb; // TODO
         case COMBINER_NOISE: return MISSING_COLOR.rgb; // TODO
-        case COMBINER_PRIM: return MISSING_COLOR.rgb; // TODO
-        case COMBINER_PRIM_ALPHA: return MISSING_COLOR.rgb; // TODO
-        case COMBINER_PRIM_LOD_FRAC: return MISSING_COLOR.rgb; // TODO
+        case COMBINER_PRIM: return (inState.validInputs & VALID_IN_COMBINER_REG_PRIM) != 0 ? inState.combinerRegPrim.rgb : MISSING_COLOR.rgb;
+        case COMBINER_PRIM_ALPHA: return (inState.validInputs & VALID_IN_COMBINER_REG_PRIM) != 0 ? vec3(inState.combinerRegPrim.a) : MISSING_COLOR.rgb;
+        case COMBINER_PRIM_LOD_FRAC: return (inState.validInputs & VALID_IN_COMBINER_REG_PRIM_LOD_FRAC) != 0 ? vec3(inState.combinerRegPrimLODFrac) : MISSING_COLOR.rgb;
         case COMBINER_SHADE: return gammaToLinear(shadeColor.rgb);
         case COMBINER_SHADE_ALPHA: return vec3(shadeColor.a);
         case COMBINER_TEX0: return texture_wrap(inTex0, uv).rgb;

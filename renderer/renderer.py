@@ -19,6 +19,11 @@ from . import magic
 class MaterialData:
     tex0: Optional[bpy.types.Image]
     combiner_words: Sequence[int]
+    combiner_reg_k4: float
+    combiner_reg_k5: float
+    combiner_reg_prim_lod_frac: float
+    combiner_reg_env: tuple[float, float, float, float]
+    combiner_reg_prim: tuple[float, float, float, float]
 
 
 @dataclasses.dataclass
@@ -61,7 +66,21 @@ COMBINER_MAP = {
 }
 
 
-def get_material_data(mat: bpy.types.Material):
+# TODO refactor: merge WORLD_RDPQ_DEFAULTS_DEFAULTS from sync_to_fast64 with this one
+class WORLD_RDPQ_DEFAULTS_DEFAULTS:
+    class combiner:
+        class registers:
+            k4 = 0
+            k5 = 0
+            prim_lod_frac = 0
+            env = (1, 1, 1, 1)
+            prim = (1, 1, 1, 1)
+
+
+def get_material_data(
+    world_rdpq_defaults: WORLD_RDPQ_DEFAULTS_DEFAULTS,
+    mat: bpy.types.Material,
+):
     mat_rdpq = util.LIBDRAGON_RDPQ(mat)
     tex0 = mat_rdpq.texture0.image if mat_rdpq.use_texture0 else None
     combiner_words = [0, 0, 0, 0]
@@ -108,11 +127,48 @@ def get_material_data(mat: bpy.types.Material):
         ),
     ):
         combiner_words[word] |= COMBINER_MAP[slot] << shift
-    mat_data = MaterialData(tex0, combiner_words)
+    combiner_reg_k4 = (
+        mat_rdpq.combiner.registers.k4
+        if mat_rdpq.combiner.registers.set_k4
+        else world_rdpq_defaults.combiner.registers.k4
+    )
+    combiner_reg_k5 = (
+        mat_rdpq.combiner.registers.k5
+        if mat_rdpq.combiner.registers.set_k5
+        else world_rdpq_defaults.combiner.registers.k5
+    )
+    combiner_reg_prim_lod_frac = (
+        mat_rdpq.combiner.registers.prim_lod_frac
+        if mat_rdpq.combiner.registers.set_prim_lod_frac
+        else world_rdpq_defaults.combiner.registers.prim_lod_frac
+    )
+    combiner_reg_env = (
+        mat_rdpq.combiner.registers.env
+        if mat_rdpq.combiner.registers.set_env
+        else world_rdpq_defaults.combiner.registers.env
+    )
+    combiner_reg_prim = (
+        mat_rdpq.combiner.registers.prim
+        if mat_rdpq.combiner.registers.set_prim
+        else world_rdpq_defaults.combiner.registers.prim
+    )
+    mat_data = MaterialData(
+        tex0,
+        combiner_words,
+        combiner_reg_k4,
+        combiner_reg_k5,
+        combiner_reg_prim_lod_frac,
+        combiner_reg_env,
+        combiner_reg_prim,
+    )
     return mat_data
 
 
-def get_mesh_data(obj: bpy.types.Object, depsgraph: bpy.types.Depsgraph):
+def get_mesh_data(
+    world_rdpq_defaults: WORLD_RDPQ_DEFAULTS_DEFAULTS,
+    obj: bpy.types.Object,
+    depsgraph: bpy.types.Depsgraph,
+):
     meshes: list[MeshData] = []
 
     obj_eval = obj.evaluated_get(depsgraph)
@@ -191,7 +247,7 @@ def get_mesh_data(obj: bpy.types.Object, depsgraph: bpy.types.Depsgraph):
             mat = None
 
         if mat is not None:
-            mat_data = get_material_data(mat)
+            mat_data = get_material_data(world_rdpq_defaults, mat)
         else:
             mat_data = None
 
@@ -240,10 +296,27 @@ def draw_mesh(
         if mat.tex0 is not None:
             valid_inputs_flags |= magic.VALID_IN_TEX0
             shader.uniform_sampler("inTex0", gpu.texture.from_image(mat.tex0))
-        valid_inputs_flags |= magic.VALID_IN_COMBINER
+        valid_inputs_flags |= (
+            magic.VALID_IN_COMBINER
+            | magic.VALID_IN_COMBINER_REG_K4
+            | magic.VALID_IN_COMBINER_REG_K5
+            | magic.VALID_IN_COMBINER_REG_PRIM_LOD_FRAC
+            | magic.VALID_IN_COMBINER_REG_ENV
+            | magic.VALID_IN_COMBINER_REG_PRIM
+        )
         combiner_words = mat.combiner_words
+        combiner_reg_k4 = mat.combiner_reg_k4
+        combiner_reg_k5 = mat.combiner_reg_k5
+        combiner_reg_prim_lod_frac = mat.combiner_reg_prim_lod_frac
+        combiner_reg_env = mat.combiner_reg_env
+        combiner_reg_prim = mat.combiner_reg_prim
     else:
         combiner_words = (0, 0, 0, 0)
+        combiner_reg_k4 = 0
+        combiner_reg_k5 = 0
+        combiner_reg_prim_lod_frac = 0
+        combiner_reg_env = (1, 1, 1, 1)
+        combiner_reg_prim = (1, 1, 1, 1)
 
     content = {
         "inPos": mesh.loops_co,
@@ -256,10 +329,25 @@ def draw_mesh(
         content["inUV"] = mesh.loops_uv
 
     data = struct.pack(
-        "16f 16f 4i i 12x",
+        (
+            "16f"  # matMVP
+            "16f"  # matMV
+            "4i"  # combiner
+            "4f"  # combinerRegEnv
+            "4f"  # combinerRegPrim
+            "f"  # combinerRegK4
+            "f"  # combinerRegK5
+            "f"  # combinerRegPrimLODFrac
+            "i"  # validInputs
+        ),
         *np.array(proj_view_mtx @ mesh.model_matrix).T.ravel(),
         *np.array(view_mtx @ mesh.model_matrix).T.ravel(),
         *combiner_words,
+        *combiner_reg_env,
+        *combiner_reg_prim,
+        combiner_reg_k4,
+        combiner_reg_k5,
+        combiner_reg_prim_lod_frac,
         valid_inputs_flags,
     )
     ubo = gpu.types.GPUUniformBuf(data)
@@ -291,6 +379,11 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
 
         scene = depsgraph.scene
         assert scene is not None
+
+        if scene.world is not None:
+            world_rdpq_defaults = util.LIBDRAGON_RDPQ(scene.world).defaults
+        else:
+            world_rdpq_defaults = WORLD_RDPQ_DEFAULTS_DEFAULTS
 
         scale = scene.render.resolution_percentage / 100
         width = int(scene.render.resolution_x * scale)
@@ -336,7 +429,7 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
             fb: gpu.types.GPUFrameBuffer
             fb.clear(color=(0.1, 0.1, 0.1, 1))
 
-            mat_data = get_material_data(mat)
+            mat_data = get_material_data(world_rdpq_defaults, mat)
 
             # Draw a full-viewport plane
             # y ^
@@ -406,11 +499,16 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
             self.scene_data = SceneData()
             return
 
+        if scene.world is not None:
+            world_rdpq_defaults = util.LIBDRAGON_RDPQ(scene.world).defaults
+        else:
+            world_rdpq_defaults = WORLD_RDPQ_DEFAULTS_DEFAULTS
+
         meshes: list[MeshData] = []
 
         for obj in scene.objects:
             if obj.type == "MESH":
-                meshes.extend(get_mesh_data(obj, depsgraph))
+                meshes.extend(get_mesh_data(world_rdpq_defaults, obj, depsgraph))
 
         self.scene_data = SceneData(meshes)
 
@@ -433,6 +531,11 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
             " mat4 matMVP;"
             " mat4 matMV;"
             " ivec4 combiner;"
+            " vec4 combinerRegEnv;"
+            " vec4 combinerRegPrim;"
+            " float combinerRegK4;"
+            " float combinerRegK5;"
+            " float combinerRegPrimLODFrac;"
             " int validInputs;"
             "};"
         )
