@@ -5,7 +5,6 @@ import bpy
 from . import rdpq_material_props
 from . import util
 
-
 SYNCED_MATERIALS: dict[bpy.types.Material, object] = {}
 
 
@@ -107,6 +106,14 @@ COMBINER_1_MUXES_FAST64_MAP.update(
 
 class WORLD_RDPQ_DEFAULTS_DEFAULTS:
     placeholders = []
+
+    class combiner:
+        class registers:
+            k4 = 0
+            k5 = 0
+            prim_lod_frac = 0
+            env = (1, 1, 1, 1)
+            prim = (1, 1, 1, 1)
 
     class render_mode:
         antialias = "STANDARD"
@@ -266,14 +273,39 @@ def rdpq_material_props_to_fast64_props(
         mat_rdpq.combiner.alpha_D_1
     ]
 
-    mat_fast64.set_k0_5 = True
-    mat_fast64.k4 = mat_rdpq.combiner.registers.k4
-    mat_fast64.k5 = mat_rdpq.combiner.registers.k5
-    mat_fast64.set_prim = True
-    mat_fast64.prim_lod_frac = mat_rdpq.combiner.registers.prim_lod_frac
-    mat_fast64.prim_color = mat_rdpq.combiner.registers.prim
-    mat_fast64.set_env = True
-    mat_fast64.env_color = mat_rdpq.combiner.registers.env
+    mat_fast64.set_k0_5 = (
+        mat_rdpq.combiner.registers.set_k4 or mat_rdpq.combiner.registers.set_k5
+    )
+    mat_fast64.k4 = (
+        mat_rdpq.combiner.registers.k4
+        if mat_rdpq.combiner.registers.set_k4
+        else world_rdpq_defaults.combiner.registers.k4
+    )
+    mat_fast64.k5 = (
+        mat_rdpq.combiner.registers.k5
+        if mat_rdpq.combiner.registers.set_k5
+        else world_rdpq_defaults.combiner.registers.k5
+    )
+    mat_fast64.set_prim = (
+        mat_rdpq.combiner.registers.set_prim_lod_frac
+        or mat_rdpq.combiner.registers.set_prim
+    )
+    mat_fast64.prim_lod_frac = (
+        mat_rdpq.combiner.registers.prim_lod_frac
+        if mat_rdpq.combiner.registers.set_prim_lod_frac
+        else world_rdpq_defaults.combiner.registers.prim_lod_frac
+    )
+    mat_fast64.prim_color = (
+        mat_rdpq.combiner.registers.prim
+        if mat_rdpq.combiner.registers.set_prim
+        else world_rdpq_defaults.combiner.registers.prim
+    )
+    mat_fast64.set_env = mat_rdpq.combiner.registers.set_env
+    mat_fast64.env_color = (
+        mat_rdpq.combiner.registers.env
+        if mat_rdpq.combiner.registers.set_env
+        else world_rdpq_defaults.combiner.registers.env
+    )
 
     # Blender
 

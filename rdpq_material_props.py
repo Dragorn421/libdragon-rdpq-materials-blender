@@ -108,15 +108,19 @@ class RDPQMaterialTextureProperties(bpy.types.PropertyGroup):
 
 
 class RDPQMaterialCombinerRegistersProperties(bpy.types.PropertyGroup):
+    set_k4: bpy.props.BoolProperty(name="Set K4")
     k4: bpy.props.FloatProperty(name="K4", min=0, max=1)
+    set_k5: bpy.props.BoolProperty(name="Set K5")
     k5: bpy.props.FloatProperty(name="K5", min=0, max=1)
     # TODO keyscale, keycenter
+    set_prim_lod_frac: bpy.props.BoolProperty(name="Set Prim LOD Frac")
     prim_lod_frac: bpy.props.FloatProperty(
         name="Prim LOD Frac",
         description="Primitive LOD fraction",
         min=0,
         max=1,
     )
+    set_env: bpy.props.BoolProperty(name="Set Env")
     env: bpy.props.FloatVectorProperty(
         name="Env",
         description="Environment color",
@@ -126,6 +130,7 @@ class RDPQMaterialCombinerRegistersProperties(bpy.types.PropertyGroup):
         subtype="COLOR",
         size=4,
     )
+    set_prim: bpy.props.BoolProperty(name="Set Prim")
     prim: bpy.props.FloatVectorProperty(
         name="Prim",
         description="Primitive color",
@@ -901,10 +906,15 @@ LIBDRAGON_RDPQ_PROPS_LIST = RecursivePropsList(
                     {
                         "registers": RecursivePropsList(
                             (
+                                "set_k4",
                                 "k4",
+                                "set_k5",
                                 "k5",
+                                "set_prim_lod_frac",
                                 "prim_lod_frac",
+                                "set_env",
                                 "env",
+                                "set_prim",
                                 "prim",
                             ),
                             {},

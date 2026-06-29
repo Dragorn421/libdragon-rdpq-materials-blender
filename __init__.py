@@ -63,6 +63,46 @@ class RDPQWorldDefaultsPlaceholderProperties(bpy.types.PropertyGroup):
     )
 
 
+class RDPQWorldDefaultsCombinerRegistersProperties(bpy.types.PropertyGroup):
+    k4: bpy.props.FloatProperty(name="K4", min=0, max=1)
+    k5: bpy.props.FloatProperty(name="K5", min=0, max=1)
+    # TODO keyscale, keycenter
+    prim_lod_frac: bpy.props.FloatProperty(
+        name="Prim LOD Frac",
+        description="Primitive LOD fraction",
+        min=0,
+        max=1,
+    )
+    env: bpy.props.FloatVectorProperty(
+        name="Env",
+        description="Environment color",
+        default=(1, 1, 1, 1),
+        min=0,
+        max=1,
+        subtype="COLOR",
+        size=4,
+    )
+    prim: bpy.props.FloatVectorProperty(
+        name="Prim",
+        description="Primitive color",
+        default=(1, 1, 1, 1),
+        min=0,
+        max=1,
+        subtype="COLOR",
+        size=4,
+    )
+
+
+class RDPQWorldDefaultsCombinerProperties(bpy.types.PropertyGroup):
+    registers_: bpy.props.PointerProperty(
+        type=RDPQWorldDefaultsCombinerRegistersProperties
+    )
+
+    @property
+    def registers(self) -> RDPQWorldDefaultsCombinerRegistersProperties:
+        return self.registers_
+
+
 class RDPQWorldDefaultsRenderModeProperties(bpy.types.PropertyGroup):
     antialias: bpy.props.EnumProperty(
         name="Antialias",
@@ -169,7 +209,12 @@ class RDPQWorldDefaultsProperties(bpy.types.PropertyGroup):
         type=RDPQWorldDefaultsPlaceholderProperties,
     )
 
+    combiner_: bpy.props.PointerProperty(type=RDPQWorldDefaultsCombinerProperties)
     render_mode_: bpy.props.PointerProperty(type=RDPQWorldDefaultsRenderModeProperties)
+
+    @property
+    def combiner(self) -> RDPQWorldDefaultsCombinerProperties:
+        return self.combiner_
 
     @property
     def render_mode(self) -> RDPQWorldDefaultsRenderModeProperties:
@@ -246,7 +291,14 @@ class RDPQWorldPanel(bpy.types.Panel):
         world = context.world
         assert world is not None
         world_rdpq = util.LIBDRAGON_RDPQ(world)
+        wdcr = world_rdpq.defaults.combiner.registers
         wdrm = world_rdpq.defaults.render_mode
+
+        layout.prop(wdcr, "k4")
+        layout.prop(wdcr, "k5")
+        layout.prop(wdcr, "prim_lod_frac")
+        layout.prop(wdcr, "env")
+        layout.prop(wdcr, "prim")
 
         layout.prop(wdrm, "antialias")
         layout.prop(wdrm, "fog")
@@ -420,11 +472,19 @@ class RDPQMaterialPanel(bpy.types.Panel):
             box.prop(mat_rdpq.combiner, "alpha_B_1")
             box.prop(mat_rdpq.combiner, "alpha_C_1")
             box.prop(mat_rdpq.combiner, "alpha_D_1")
-        prop_split(box, mat_rdpq.combiner.registers, "k4")
-        prop_split(box, mat_rdpq.combiner.registers, "k5")
-        prop_split(box, mat_rdpq.combiner.registers, "prim_lod_frac")
-        prop_split(box, mat_rdpq.combiner.registers, "env")
-        prop_split(box, mat_rdpq.combiner.registers, "prim")
+
+        def prop_combiner_register(set_prop, prop):
+            row = box.row()
+            row.prop(mat_rdpq.combiner.registers, set_prop, text="")
+            col = row.column()
+            col.prop(mat_rdpq.combiner.registers, prop)
+            col.enabled = getattr(mat_rdpq.combiner.registers, set_prop)
+
+        prop_combiner_register("set_k4", "k4")
+        prop_combiner_register("set_k5", "k5")
+        prop_combiner_register("set_prim_lod_frac", "prim_lod_frac")
+        prop_combiner_register("set_env", "env")
+        prop_combiner_register("set_prim", "prim")
 
         box = layout.box()
         prop_split(box, mat_rdpq.blender, "preset")
@@ -477,6 +537,8 @@ classes = (
     gltf_extension.glTFExtensionProperties,
     RDPQSceneProperties,
     RDPQWorldDefaultsPlaceholderProperties,
+    RDPQWorldDefaultsCombinerRegistersProperties,
+    RDPQWorldDefaultsCombinerProperties,
     RDPQWorldDefaultsRenderModeProperties,
     RDPQWorldDefaultsProperties,
     RDPQWorldProperties,

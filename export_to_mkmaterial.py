@@ -138,17 +138,22 @@ def rdpq_material_properties_to_dict(
             "combiner.alpha.raw": combiner_alpha,
         }
     )
-    mat_data["combiner.reg.k4"] = str(mat_rdpq.combiner.registers.k4)
-    mat_data["combiner.reg.k5"] = str(mat_rdpq.combiner.registers.k5)
-    mat_data["combiner.reg.prim_lod_frac"] = str(
-        mat_rdpq.combiner.registers.prim_lod_frac
-    )
-    mat_data["combiner.reg.env"] = ",".join(
-        str(_c) for _c in mat_rdpq.combiner.registers.env
-    )
-    mat_data["combiner.reg.prim"] = ",".join(
-        str(_c) for _c in mat_rdpq.combiner.registers.prim
-    )
+    if mat_rdpq.combiner.registers.set_k4:
+        mat_data["combiner.reg.k4"] = str(mat_rdpq.combiner.registers.k4)
+    if mat_rdpq.combiner.registers.set_k5:
+        mat_data["combiner.reg.k5"] = str(mat_rdpq.combiner.registers.k5)
+    if mat_rdpq.combiner.registers.set_prim_lod_frac:
+        mat_data["combiner.reg.prim_lod_frac"] = str(
+            mat_rdpq.combiner.registers.prim_lod_frac
+        )
+    if mat_rdpq.combiner.registers.set_env:
+        mat_data["combiner.reg.env"] = ",".join(
+            str(_c) for _c in mat_rdpq.combiner.registers.env
+        )
+    if mat_rdpq.combiner.registers.set_prim:
+        mat_data["combiner.reg.prim"] = ",".join(
+            str(_c) for _c in mat_rdpq.combiner.registers.prim
+        )
 
     if mat_rdpq.blender.preset == "CUSTOM_1_PASS":
         raise NotImplementedError()
