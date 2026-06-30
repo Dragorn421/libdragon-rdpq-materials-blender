@@ -68,6 +68,8 @@ COMBINER_MAP = {
 
 # TODO refactor: merge WORLD_RDPQ_DEFAULTS_DEFAULTS from sync_to_fast64 with this one
 class WORLD_RDPQ_DEFAULTS_DEFAULTS:
+    placeholders = []
+
     class combiner:
         class registers:
             k4 = 0
@@ -82,7 +84,18 @@ def get_material_data(
     mat: bpy.types.Material,
 ):
     mat_rdpq = util.LIBDRAGON_RDPQ(mat)
-    tex0 = mat_rdpq.texture0.image if mat_rdpq.use_texture0 else None
+    if mat_rdpq.use_texture0:
+        if mat_rdpq.texture0.use_placeholder:
+            tex0 = None
+            for default_placeholder in world_rdpq_defaults.placeholders:
+                if default_placeholder.slot_index == mat_rdpq.texture0.placeholder:
+                    tex0 = default_placeholder.image
+                    # TODO do libdragon placeholders also contain ST information?
+                    break
+        else:
+            tex0 = mat_rdpq.texture0.image
+    else:
+        tex0 = None
     combiner_words = [0, 0, 0, 0]
     for slot, shift, word in (
         (
