@@ -8,6 +8,12 @@ VALID_IN_COMBINER_REG_K5 = 1 << 4
 VALID_IN_COMBINER_REG_PRIM_LOD_FRAC = 1 << 5
 VALID_IN_COMBINER_REG_ENV = 1 << 6
 VALID_IN_COMBINER_REG_PRIM = 1 << 7
+VALID_IN_TEX0_ST = 1 << 8
+VALID_IN_TEX1 = 1 << 9
+VALID_IN_TEX1_ST = 1 << 10
+
+TEX_ST_FLAG_REPEATS_INF = 1 << 0
+TEX_ST_FLAG_MIRROR = 1 << 1
 
 # Each combiner slot value is given 5 bits
 # _WORD is the int in which the value is stored (0 is .x, 1 is .y, ...)

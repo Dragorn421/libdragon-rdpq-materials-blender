@@ -11,13 +11,31 @@ if TYPE_CHECKING:
 
 import numpy as np
 
+from .. import rdpq_material_props
 from .. import util
 from . import magic
 
 
 @dataclasses.dataclass
+class MaterialDataTexAxis:
+    dim: int
+    translate: float
+    scale: int
+    repeats_inf: bool
+    repeats: float
+    mirror: bool
+
+
+@dataclasses.dataclass
+class MaterialDataTex:
+    image: bpy.types.Image
+    s: MaterialDataTexAxis
+    t: MaterialDataTexAxis
+
+
+@dataclasses.dataclass
 class MaterialData:
-    tex0: Optional[bpy.types.Image]
+    tex0: Optional[MaterialDataTex]
     combiner_words: Sequence[int]
     combiner_reg_k4: float
     combiner_reg_k5: float
@@ -84,18 +102,43 @@ def get_material_data(
     mat: bpy.types.Material,
 ):
     mat_rdpq = util.LIBDRAGON_RDPQ(mat)
-    if mat_rdpq.use_texture0:
-        if mat_rdpq.texture0.use_placeholder:
-            tex0 = None
+
+    def handle_texture_axis(
+        texture_axis_props: rdpq_material_props.RDPQMaterialTextureAxisProperties,
+        dim: int,
+    ):
+        return MaterialDataTexAxis(
+            dim,
+            texture_axis_props.translate,
+            texture_axis_props.scale,
+            texture_axis_props.repeats_inf,
+            texture_axis_props.repeats,
+            texture_axis_props.mirror,
+        )
+
+    def handle_texture(
+        texture_props: rdpq_material_props.RDPQMaterialTextureProperties,
+    ):
+        if texture_props.use_placeholder:
+            img = None
             for default_placeholder in world_rdpq_defaults.placeholders:
-                if default_placeholder.slot_index == mat_rdpq.texture0.placeholder:
-                    tex0 = default_placeholder.image
+                if default_placeholder.slot_index == texture_props.placeholder:
+                    img = default_placeholder.image
                     # TODO do libdragon placeholders also contain ST information?
                     break
         else:
-            tex0 = mat_rdpq.texture0.image
+            img = texture_props.image
+        if img is None:
+            return None
+        s = handle_texture_axis(texture_props.s, img.size[0])
+        t = handle_texture_axis(texture_props.t, img.size[1])
+        return MaterialDataTex(img, s, t)
+
+    if mat_rdpq.use_texture0:
+        tex0 = handle_texture(mat_rdpq.texture0)
     else:
         tex0 = None
+    # TODO tex1
     combiner_words = [0, 0, 0, 0]
     for slot, shift, word in (
         (
@@ -307,8 +350,37 @@ def draw_mesh(
     if mesh.material is not None:
         mat = mesh.material
         if mat.tex0 is not None:
-            valid_inputs_flags |= magic.VALID_IN_TEX0
-            shader.uniform_sampler("inTex0", gpu.texture.from_image(mat.tex0))
+            valid_inputs_flags |= magic.VALID_IN_TEX0 | magic.VALID_IN_TEX0_ST
+            shader.uniform_sampler("inTex0", gpu.texture.from_image(mat.tex0.image))
+            tex0_s_dim = mat.tex0.s.dim
+            tex0_s_translate = mat.tex0.s.translate
+            tex0_s_scale = mat.tex0.s.scale
+            tex0_s_repeats = mat.tex0.s.repeats
+            tex0_s_flags = 0
+            if mat.tex0.s.repeats_inf:
+                tex0_s_flags |= magic.TEX_ST_FLAG_REPEATS_INF
+            if mat.tex0.s.mirror:
+                tex0_s_flags |= magic.TEX_ST_FLAG_MIRROR
+            tex0_t_dim = mat.tex0.t.dim
+            tex0_t_translate = mat.tex0.t.translate
+            tex0_t_scale = mat.tex0.t.scale
+            tex0_t_repeats = mat.tex0.t.repeats
+            tex0_t_flags = 0
+            if mat.tex0.t.repeats_inf:
+                tex0_t_flags |= magic.TEX_ST_FLAG_REPEATS_INF
+            if mat.tex0.t.mirror:
+                tex0_t_flags |= magic.TEX_ST_FLAG_MIRROR
+        else:
+            tex0_s_dim = 0
+            tex0_s_translate = 0
+            tex0_s_scale = 0
+            tex0_s_repeats = 0
+            tex0_s_flags = 0
+            tex0_t_dim = 0
+            tex0_t_translate = 0
+            tex0_t_scale = 0
+            tex0_t_repeats = 0
+            tex0_t_flags = 0
         valid_inputs_flags |= (
             magic.VALID_IN_COMBINER
             | magic.VALID_IN_COMBINER_REG_K4
@@ -324,6 +396,16 @@ def draw_mesh(
         combiner_reg_env = mat.combiner_reg_env
         combiner_reg_prim = mat.combiner_reg_prim
     else:
+        tex0_s_dim = 0
+        tex0_s_translate = 0
+        tex0_s_scale = 0
+        tex0_s_repeats = 0
+        tex0_s_flags = 0
+        tex0_t_dim = 0
+        tex0_t_translate = 0
+        tex0_t_scale = 0
+        tex0_t_repeats = 0
+        tex0_t_flags = 0
         combiner_words = (0, 0, 0, 0)
         combiner_reg_k4 = 0
         combiner_reg_k5 = 0
@@ -351,7 +433,18 @@ def draw_mesh(
             "f"  # combinerRegK4
             "f"  # combinerRegK5
             "f"  # combinerRegPrimLODFrac
+            "i"  # tex0SDim
+            "f"  # tex0STranslate
+            "i"  # tex0SScale
+            "f"  # tex0SRepeats
+            "i"  # tex0SFlags
+            "i"  # tex0TDim
+            "f"  # tex0TTranslate
+            "i"  # tex0TScale
+            "f"  # tex0TRepeats
+            "i"  # tex0TFlags
             "i"  # validInputs
+            "8x"
         ),
         *np.array(proj_view_mtx @ mesh.model_matrix).T.ravel(),
         *np.array(view_mtx @ mesh.model_matrix).T.ravel(),
@@ -361,6 +454,16 @@ def draw_mesh(
         combiner_reg_k4,
         combiner_reg_k5,
         combiner_reg_prim_lod_frac,
+        tex0_s_dim,
+        tex0_s_translate,
+        tex0_s_scale,
+        tex0_s_repeats,
+        tex0_s_flags,
+        tex0_t_dim,
+        tex0_t_translate,
+        tex0_t_scale,
+        tex0_t_repeats,
+        tex0_t_flags,
         valid_inputs_flags,
     )
     ubo = gpu.types.GPUUniformBuf(data)
@@ -549,6 +652,16 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
             " float combinerRegK4;"
             " float combinerRegK5;"
             " float combinerRegPrimLODFrac;"
+            " int   tex0SDim;"
+            " float tex0STranslate;"
+            " int   tex0SScale;"
+            " float tex0SRepeats;"
+            " int   tex0SFlags;"
+            " int   tex0TDim;"
+            " float tex0TTranslate;"
+            " int   tex0TScale;"
+            " float tex0TRepeats;"
+            " int   tex0TFlags;"
             " int validInputs;"
             "};"
         )
@@ -560,6 +673,7 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
         shader_info.vertex_in(3, "VEC2", "inUV")
 
         shader_info.sampler(0, "FLOAT_2D", "inTex0")
+        shader_info.sampler(1, "FLOAT_2D", "inTex1")
 
         vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
         vert_out.smooth("VEC4", "shadeColor")

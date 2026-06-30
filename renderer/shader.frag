@@ -26,11 +26,75 @@ int getCombinerWord(int word) {
 
 #define MISSING_COLOR vec4(1, 0, 1, 1)
 
-vec4 texture_wrap(sampler2D tex, vec2 uv) {
-    if ((inState.validInputs & VALID_IN_TEX0) != 0 && (inState.validInputs & VALID_IN_UV) != 0)
-        return texture(tex, uv);
-    else
+float uv_compute_axis(int i, int axis) {
+    int dim;
+    float translate;
+    int scale;
+    float repeats;
+    int flags;
+    if (i == 0) {
+        if (axis == 0) {
+            dim = inState.tex0SDim;
+            translate = inState.tex0STranslate;
+            scale = inState.tex0SScale;
+            repeats = inState.tex0SRepeats;
+            flags = inState.tex0SFlags;
+        } else {
+            dim = inState.tex0TDim;
+            translate = inState.tex0TTranslate;
+            scale = inState.tex0TScale;
+            repeats = inState.tex0TRepeats;
+            flags = inState.tex0TFlags;
+        }
+    } else {
+        // TODO tex1
+        dim = 0;
+        translate = 0;
+        scale = 0;
+        repeats = 0;
+        flags = 0;
+    }
+    float v = axis == 0 ? uv.x : uv.y;
+    if (scale < 0) {
+        v *= 1 << -scale;
+    } else {
+        v /= 1 << scale;
+    }
+    v -= translate / dim;
+    if ((flags & TEX_ST_FLAG_REPEATS_INF) == 0) {
+        if (v < 0.5 / dim) {
+            v = 0.5 / dim;
+        } else if (v > repeats - 0.5 / dim) {
+            v = repeats - 0.5 / dim;
+        }
+    }
+    if ((flags & TEX_ST_FLAG_MIRROR) != 0) {
+        v = mod(v, 2);
+        if (v >= 1) {
+            v = 2 - v;
+        }
+        v = clamp(v, 0.5 / dim, 1 - 0.5 / dim);
+    }
+    return v;
+}
+
+vec2 uv_compute(int i) {
+    return vec2(uv_compute_axis(i, 0), uv_compute_axis(i, 1));
+}
+
+vec4 texture_wrap(int i) {
+    if ((inState.validInputs & (i == 0 ? VALID_IN_TEX0 : VALID_IN_TEX1)) != 0
+        && (inState.validInputs & VALID_IN_UV) != 0
+        && (inState.validInputs & (i == 0 ? VALID_IN_TEX0_ST : VALID_IN_TEX1_ST)) != 0
+    ) {
+        if (i == 0) {
+            return texture(inTex0, uv_compute(i));
+        } else {
+            return texture(inTex1, uv_compute(i));
+        }
+    } else {
         return MISSING_COLOR;
+    }
 }
 
 vec3 combinerEvaluateSlotRGB(int slot, vec3 prevCycleCombined) {
@@ -50,8 +114,8 @@ vec3 combinerEvaluateSlotRGB(int slot, vec3 prevCycleCombined) {
         case COMBINER_PRIM_LOD_FRAC: return (inState.validInputs & VALID_IN_COMBINER_REG_PRIM_LOD_FRAC) != 0 ? vec3(inState.combinerRegPrimLODFrac) : MISSING_COLOR.rgb;
         case COMBINER_SHADE: return gammaToLinear(shadeColor.rgb);
         case COMBINER_SHADE_ALPHA: return vec3(shadeColor.a);
-        case COMBINER_TEX0: return texture_wrap(inTex0, uv).rgb;
-        case COMBINER_TEX0_ALPHA: return vec3(texture_wrap(inTex0, uv).a);
+        case COMBINER_TEX0: return texture_wrap(0).rgb;
+        case COMBINER_TEX0_ALPHA: return vec3(texture_wrap(0).a);
         case COMBINER_TEX1: return MISSING_COLOR.rgb; // TODO
         case COMBINER_TEX1_ALPHA: return MISSING_COLOR.rgb; // TODO
         case COMBINER_COMBINED: return prevCycleCombined;
