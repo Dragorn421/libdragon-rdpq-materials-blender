@@ -23,6 +23,14 @@ int getCombinerWord(int word) {
 #define COMBINER_RGB_2B_SUBB ((getCombinerWord(COMBINER_RGB_2B_SUBB_WORD) >> COMBINER_RGB_2B_SUBB_SHIFT) & COMBINER_MASK)
 #define COMBINER_RGB_2B_MUL ((getCombinerWord(COMBINER_RGB_2B_MUL_WORD) >> COMBINER_RGB_2B_MUL_SHIFT) & COMBINER_MASK)
 #define COMBINER_RGB_2B_ADD ((getCombinerWord(COMBINER_RGB_2B_ADD_WORD) >> COMBINER_RGB_2B_ADD_SHIFT) & COMBINER_MASK)
+#define COMBINER_A_2A_SUBA ((getCombinerWord(COMBINER_A_2A_SUBA_WORD) >> COMBINER_A_2A_SUBA_SHIFT) & COMBINER_MASK)
+#define COMBINER_A_2A_SUBB ((getCombinerWord(COMBINER_A_2A_SUBB_WORD) >> COMBINER_A_2A_SUBB_SHIFT) & COMBINER_MASK)
+#define COMBINER_A_2A_MUL ((getCombinerWord(COMBINER_A_2A_MUL_WORD) >> COMBINER_A_2A_MUL_SHIFT) & COMBINER_MASK)
+#define COMBINER_A_2A_ADD ((getCombinerWord(COMBINER_A_2A_ADD_WORD) >> COMBINER_A_2A_ADD_SHIFT) & COMBINER_MASK)
+#define COMBINER_A_2B_SUBA ((getCombinerWord(COMBINER_A_2B_SUBA_WORD) >> COMBINER_A_2B_SUBA_SHIFT) & COMBINER_MASK)
+#define COMBINER_A_2B_SUBB ((getCombinerWord(COMBINER_A_2B_SUBB_WORD) >> COMBINER_A_2B_SUBB_SHIFT) & COMBINER_MASK)
+#define COMBINER_A_2B_MUL ((getCombinerWord(COMBINER_A_2B_MUL_WORD) >> COMBINER_A_2B_MUL_SHIFT) & COMBINER_MASK)
+#define COMBINER_A_2B_ADD ((getCombinerWord(COMBINER_A_2B_ADD_WORD) >> COMBINER_A_2B_ADD_SHIFT) & COMBINER_MASK)
 
 #define MISSING_COLOR vec4(1, 0, 1, 1)
 
@@ -104,7 +112,7 @@ vec4 texture_wrap(int i) {
     }
 }
 
-vec3 combinerEvaluateSlotRGB(int slot, vec3 prevCycleCombined) {
+vec3 combinerEvaluateSlotRGB(int slot, vec3 prevCycleCombinedRGB, float prevCycleCombinedA) {
     switch (slot) {
         case COMBINER_0: return vec3(0);
         case COMBINER_1: return vec3(1);
@@ -125,31 +133,67 @@ vec3 combinerEvaluateSlotRGB(int slot, vec3 prevCycleCombined) {
         case COMBINER_TEX0_ALPHA: return vec3(texture_wrap(0).a);
         case COMBINER_TEX1: return texture_wrap(1).rgb;
         case COMBINER_TEX1_ALPHA: return vec3(texture_wrap(1).a);
-        case COMBINER_COMBINED: return prevCycleCombined;
+        case COMBINER_COMBINED: return prevCycleCombinedRGB;
+        case COMBINER_COMBINED_ALPHA: return vec3(prevCycleCombinedA);
     }
 }
 
-vec3 combinerEvaluateCycleRGB(int suba, int subb, int mul, int add, vec3 prevCycleCombined) {
+float combinerEvaluateSlotA(int slot, float prevCycleCombinedA) {
+    switch (slot) {
+        case COMBINER_0: return 0;
+        case COMBINER_1: return 1;
+        case COMBINER_ENV: return (inState.validInputs & VALID_IN_COMBINER_REG_ENV) != 0 ? inState.combinerRegEnv.a : MISSING_COLOR.a;
+        case COMBINER_LOD_FRAC: return MISSING_COLOR.a; // TODO
+        case COMBINER_PRIM: return (inState.validInputs & VALID_IN_COMBINER_REG_PRIM) != 0 ? inState.combinerRegPrim.a : MISSING_COLOR.a;
+        case COMBINER_PRIM_LOD_FRAC: return (inState.validInputs & VALID_IN_COMBINER_REG_PRIM_LOD_FRAC) != 0 ? inState.combinerRegPrimLODFrac : MISSING_COLOR.a;
+        case COMBINER_SHADE: return shadeColor.a;
+        case COMBINER_TEX0: return texture_wrap(0).a;
+        case COMBINER_TEX1: return texture_wrap(1).a;
+        case COMBINER_COMBINED: return prevCycleCombinedA;
+    }
+}
+
+vec3 combinerEvaluateCycleRGB(int suba, int subb, int mul, int add, vec3 prevCycleCombinedRGB, float prevCycleCombinedA) {
     // TODO handle clamp/overflow
     return (
-        combinerEvaluateSlotRGB(suba, prevCycleCombined)
-        - combinerEvaluateSlotRGB(subb, prevCycleCombined)
-    ) * combinerEvaluateSlotRGB(mul, prevCycleCombined)
-    + combinerEvaluateSlotRGB(add, prevCycleCombined);
+        combinerEvaluateSlotRGB(suba, prevCycleCombinedRGB, prevCycleCombinedA)
+        - combinerEvaluateSlotRGB(subb, prevCycleCombinedRGB, prevCycleCombinedA)
+    ) * combinerEvaluateSlotRGB(mul, prevCycleCombinedRGB, prevCycleCombinedA)
+    + combinerEvaluateSlotRGB(add, prevCycleCombinedRGB, prevCycleCombinedA);
+}
+
+float combinerEvaluateCycleA(int suba, int subb, int mul, int add, float prevCycleCombinedA) {
+    // TODO handle clamp/overflow
+    return (
+        combinerEvaluateSlotA(suba, prevCycleCombinedA)
+        - combinerEvaluateSlotA(subb, prevCycleCombinedA)
+    ) * combinerEvaluateSlotA(mul, prevCycleCombinedA)
+    + combinerEvaluateSlotA(add, prevCycleCombinedA);
 }
 
 void main() 
 {
-    vec3 combined;
-    combined = combinerEvaluateCycleRGB(
+    vec3 combinedRGB;
+    float combinedA;
+    combinedRGB = combinerEvaluateCycleRGB(
         COMBINER_RGB_2A_SUBA, COMBINER_RGB_2A_SUBB,
         COMBINER_RGB_2A_MUL, COMBINER_RGB_2A_ADD,
-        vec3(0)
+        vec3(0), 0
     );
-    combined = combinerEvaluateCycleRGB(
+    combinedA = combinerEvaluateCycleA(
+        COMBINER_A_2A_SUBA, COMBINER_A_2A_SUBB,
+        COMBINER_A_2A_MUL, COMBINER_A_2A_ADD,
+        0
+    );
+    combinedRGB = combinerEvaluateCycleRGB(
         COMBINER_RGB_2B_SUBA, COMBINER_RGB_2B_SUBB,
         COMBINER_RGB_2B_MUL, COMBINER_RGB_2B_ADD,
-        combined
+        combinedRGB, combinedA
     );
-    FragColor = vec4(combined, 1);
+    combinedA = combinerEvaluateCycleA(
+        COMBINER_A_2B_SUBA, COMBINER_A_2B_SUBB,
+        COMBINER_A_2B_MUL, COMBINER_A_2B_ADD,
+        combinedA
+    );
+    FragColor = vec4(combinedRGB, combinedA);
 }

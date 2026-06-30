@@ -1,4 +1,5 @@
 import dataclasses
+import enum
 from pathlib import Path
 import struct
 from typing import Optional, Sequence, TYPE_CHECKING
@@ -33,6 +34,12 @@ class MaterialDataTex:
     t: MaterialDataTexAxis
 
 
+class MaterialDataBlendMode(enum.Enum):
+    NONE = enum.auto()
+    ALPHA = enum.auto()
+    ADDITIVE = enum.auto()
+
+
 @dataclasses.dataclass
 class MaterialData:
     tex0: Optional[MaterialDataTex]
@@ -43,6 +50,7 @@ class MaterialData:
     combiner_reg_prim_lod_frac: float
     combiner_reg_env: tuple[float, float, float, float]
     combiner_reg_prim: tuple[float, float, float, float]
+    blend_mode: MaterialDataBlendMode
 
 
 @dataclasses.dataclass
@@ -82,6 +90,7 @@ COMBINER_MAP = {
     "TEX1": magic.COMBINER_TEX1,
     "TEX1_ALPHA": magic.COMBINER_TEX1_ALPHA,
     "COMBINED": magic.COMBINER_COMBINED,
+    "COMBINED_ALPHA": magic.COMBINER_COMBINED_ALPHA,
 }
 
 
@@ -96,6 +105,21 @@ class WORLD_RDPQ_DEFAULTS_DEFAULTS:
             prim_lod_frac = 0
             env = (1, 1, 1, 1)
             prim = (1, 1, 1, 1)
+
+
+def get_blend_mode(mat_rdpq: rdpq_material_props.RDPQMaterialProperties):
+    # TODO for custom 1-pass and 2-passes, try to guess
+    if mat_rdpq.blender.preset == "CUSTOM_1_PASS":
+        return MaterialDataBlendMode.NONE
+    elif mat_rdpq.blender.preset == "CUSTOM_2_PASSES":
+        return MaterialDataBlendMode.NONE
+    else:
+        return {
+            "NONE": MaterialDataBlendMode.NONE,
+            "MULTIPLY": MaterialDataBlendMode.ALPHA,
+            "MULTIPLY_CONST": MaterialDataBlendMode.ALPHA,
+            "ADDITIVE": MaterialDataBlendMode.ADDITIVE,
+        }[mat_rdpq.blender.preset]
 
 
 def get_material_data(
@@ -185,6 +209,46 @@ def get_material_data(
             magic.COMBINER_RGB_2B_ADD_SHIFT,
             magic.COMBINER_RGB_2B_ADD_WORD,
         ),
+        (
+            mat_rdpq.combiner.alpha_A_0,
+            magic.COMBINER_A_2A_SUBA_SHIFT,
+            magic.COMBINER_A_2A_SUBA_WORD,
+        ),
+        (
+            mat_rdpq.combiner.alpha_B_0,
+            magic.COMBINER_A_2A_SUBB_SHIFT,
+            magic.COMBINER_A_2A_SUBB_WORD,
+        ),
+        (
+            mat_rdpq.combiner.alpha_C_0,
+            magic.COMBINER_A_2A_MUL_SHIFT,
+            magic.COMBINER_A_2A_MUL_WORD,
+        ),
+        (
+            mat_rdpq.combiner.alpha_D_0,
+            magic.COMBINER_A_2A_ADD_SHIFT,
+            magic.COMBINER_A_2A_ADD_WORD,
+        ),
+        (
+            mat_rdpq.combiner.alpha_A_1,
+            magic.COMBINER_A_2B_SUBA_SHIFT,
+            magic.COMBINER_A_2B_SUBA_WORD,
+        ),
+        (
+            mat_rdpq.combiner.alpha_B_1,
+            magic.COMBINER_A_2B_SUBB_SHIFT,
+            magic.COMBINER_A_2B_SUBB_WORD,
+        ),
+        (
+            mat_rdpq.combiner.alpha_C_1,
+            magic.COMBINER_A_2B_MUL_SHIFT,
+            magic.COMBINER_A_2B_MUL_WORD,
+        ),
+        (
+            mat_rdpq.combiner.alpha_D_1,
+            magic.COMBINER_A_2B_ADD_SHIFT,
+            magic.COMBINER_A_2B_ADD_WORD,
+        ),
     ):
         combiner_words[word] |= COMBINER_MAP[slot] << shift
     combiner_reg_k4 = (
@@ -212,6 +276,7 @@ def get_material_data(
         if mat_rdpq.combiner.registers.set_prim
         else world_rdpq_defaults.combiner.registers.prim
     )
+    blend_mode = get_blend_mode(mat_rdpq)
     mat_data = MaterialData(
         tex0,
         tex1,
@@ -221,6 +286,7 @@ def get_material_data(
         combiner_reg_prim_lod_frac,
         combiner_reg_env,
         combiner_reg_prim,
+        blend_mode,
     )
     return mat_data
 
@@ -432,6 +498,11 @@ def draw_mesh(
         combiner_reg_prim_lod_frac = mat.combiner_reg_prim_lod_frac
         combiner_reg_env = mat.combiner_reg_env
         combiner_reg_prim = mat.combiner_reg_prim
+        blend_mode = {
+            MaterialDataBlendMode.NONE: "NONE",
+            MaterialDataBlendMode.ALPHA: "ALPHA",
+            MaterialDataBlendMode.ADDITIVE: "ADDITIVE",
+        }[mat.blend_mode]
     else:
         tex0_s_dim = 0
         tex0_s_translate = 0
@@ -459,6 +530,7 @@ def draw_mesh(
         combiner_reg_prim_lod_frac = 0
         combiner_reg_env = (1, 1, 1, 1)
         combiner_reg_prim = (1, 1, 1, 1)
+        blend_mode = "NONE"
 
     content = {
         "inPos": mesh.loops_co,
@@ -541,6 +613,7 @@ def draw_mesh(
         content,
         indices=mesh.loop_triangles_loops,
     )
+    gpu.state.blend_set(blend_mode)
     batch.draw(shader)
 
 
@@ -769,7 +842,6 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
         import gpu_extras.batch
 
         if 0:
-            gpu.state.blend_set("ALPHA_PREMULT")
             self.bind_display_space_shader(depsgraph.scene)
 
         gpu.state.depth_test_set("LESS_EQUAL")
