@@ -36,6 +36,7 @@ class MaterialDataTex:
 @dataclasses.dataclass
 class MaterialData:
     tex0: Optional[MaterialDataTex]
+    tex1: Optional[MaterialDataTex]
     combiner_words: Sequence[int]
     combiner_reg_k4: float
     combiner_reg_k5: float
@@ -138,7 +139,10 @@ def get_material_data(
         tex0 = handle_texture(mat_rdpq.texture0)
     else:
         tex0 = None
-    # TODO tex1
+    if mat_rdpq.use_texture1:
+        tex1 = handle_texture(mat_rdpq.texture1)
+    else:
+        tex1 = None
     combiner_words = [0, 0, 0, 0]
     for slot, shift, word in (
         (
@@ -210,6 +214,7 @@ def get_material_data(
     )
     mat_data = MaterialData(
         tex0,
+        tex1,
         combiner_words,
         combiner_reg_k4,
         combiner_reg_k5,
@@ -381,6 +386,38 @@ def draw_mesh(
             tex0_t_scale = 0
             tex0_t_repeats = 0
             tex0_t_flags = 0
+        if mat.tex1 is not None:
+            valid_inputs_flags |= magic.VALID_IN_TEX1 | magic.VALID_IN_TEX1_ST
+            shader.uniform_sampler("inTex1", gpu.texture.from_image(mat.tex1.image))
+            tex1_s_dim = mat.tex1.s.dim
+            tex1_s_translate = mat.tex1.s.translate
+            tex1_s_scale = mat.tex1.s.scale
+            tex1_s_repeats = mat.tex1.s.repeats
+            tex1_s_flags = 0
+            if mat.tex1.s.repeats_inf:
+                tex1_s_flags |= magic.TEX_ST_FLAG_REPEATS_INF
+            if mat.tex1.s.mirror:
+                tex1_s_flags |= magic.TEX_ST_FLAG_MIRROR
+            tex1_t_dim = mat.tex1.t.dim
+            tex1_t_translate = mat.tex1.t.translate
+            tex1_t_scale = mat.tex1.t.scale
+            tex1_t_repeats = mat.tex1.t.repeats
+            tex1_t_flags = 0
+            if mat.tex1.t.repeats_inf:
+                tex1_t_flags |= magic.TEX_ST_FLAG_REPEATS_INF
+            if mat.tex1.t.mirror:
+                tex1_t_flags |= magic.TEX_ST_FLAG_MIRROR
+        else:
+            tex1_s_dim = 0
+            tex1_s_translate = 0
+            tex1_s_scale = 0
+            tex1_s_repeats = 0
+            tex1_s_flags = 0
+            tex1_t_dim = 0
+            tex1_t_translate = 0
+            tex1_t_scale = 0
+            tex1_t_repeats = 0
+            tex1_t_flags = 0
         valid_inputs_flags |= (
             magic.VALID_IN_COMBINER
             | magic.VALID_IN_COMBINER_REG_K4
@@ -406,6 +443,16 @@ def draw_mesh(
         tex0_t_scale = 0
         tex0_t_repeats = 0
         tex0_t_flags = 0
+        tex1_s_dim = 0
+        tex1_s_translate = 0
+        tex1_s_scale = 0
+        tex1_s_repeats = 0
+        tex1_s_flags = 0
+        tex1_t_dim = 0
+        tex1_t_translate = 0
+        tex1_t_scale = 0
+        tex1_t_repeats = 0
+        tex1_t_flags = 0
         combiner_words = (0, 0, 0, 0)
         combiner_reg_k4 = 0
         combiner_reg_k5 = 0
@@ -443,8 +490,17 @@ def draw_mesh(
             "i"  # tex0TScale
             "f"  # tex0TRepeats
             "i"  # tex0TFlags
+            "i"  # tex1SDim
+            "f"  # tex1STranslate
+            "i"  # tex1SScale
+            "f"  # tex1SRepeats
+            "i"  # tex1SFlags
+            "i"  # tex1TDim
+            "f"  # tex1TTranslate
+            "i"  # tex1TScale
+            "f"  # tex1TRepeats
+            "i"  # tex1TFlags
             "i"  # validInputs
-            "8x"
         ),
         *np.array(proj_view_mtx @ mesh.model_matrix).T.ravel(),
         *np.array(view_mtx @ mesh.model_matrix).T.ravel(),
@@ -464,6 +520,16 @@ def draw_mesh(
         tex0_t_scale,
         tex0_t_repeats,
         tex0_t_flags,
+        tex1_s_dim,
+        tex1_s_translate,
+        tex1_s_scale,
+        tex1_s_repeats,
+        tex1_s_flags,
+        tex1_t_dim,
+        tex1_t_translate,
+        tex1_t_scale,
+        tex1_t_repeats,
+        tex1_t_flags,
         valid_inputs_flags,
     )
     ubo = gpu.types.GPUUniformBuf(data)
@@ -662,6 +728,16 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
             " int   tex0TScale;"
             " float tex0TRepeats;"
             " int   tex0TFlags;"
+            " int   tex1SDim;"
+            " float tex1STranslate;"
+            " int   tex1SScale;"
+            " float tex1SRepeats;"
+            " int   tex1SFlags;"
+            " int   tex1TDim;"
+            " float tex1TTranslate;"
+            " int   tex1TScale;"
+            " float tex1TRepeats;"
+            " int   tex1TFlags;"
             " int validInputs;"
             "};"
         )

@@ -47,12 +47,19 @@ float uv_compute_axis(int i, int axis) {
             flags = inState.tex0TFlags;
         }
     } else {
-        // TODO tex1
-        dim = 0;
-        translate = 0;
-        scale = 0;
-        repeats = 0;
-        flags = 0;
+        if (axis == 0) {
+            dim = inState.tex1SDim;
+            translate = inState.tex1STranslate;
+            scale = inState.tex1SScale;
+            repeats = inState.tex1SRepeats;
+            flags = inState.tex1SFlags;
+        } else {
+            dim = inState.tex1TDim;
+            translate = inState.tex1TTranslate;
+            scale = inState.tex1TScale;
+            repeats = inState.tex1TRepeats;
+            flags = inState.tex1TFlags;
+        }
     }
     float v = axis == 0 ? uv.x : uv.y;
     if (scale < 0) {
@@ -116,8 +123,8 @@ vec3 combinerEvaluateSlotRGB(int slot, vec3 prevCycleCombined) {
         case COMBINER_SHADE_ALPHA: return vec3(shadeColor.a);
         case COMBINER_TEX0: return texture_wrap(0).rgb;
         case COMBINER_TEX0_ALPHA: return vec3(texture_wrap(0).a);
-        case COMBINER_TEX1: return MISSING_COLOR.rgb; // TODO
-        case COMBINER_TEX1_ALPHA: return MISSING_COLOR.rgb; // TODO
+        case COMBINER_TEX1: return texture_wrap(1).rgb;
+        case COMBINER_TEX1_ALPHA: return vec3(texture_wrap(1).a);
         case COMBINER_COMBINED: return prevCycleCombined;
     }
 }
