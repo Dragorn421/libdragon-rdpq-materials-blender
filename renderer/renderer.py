@@ -51,6 +51,8 @@ class MaterialData:
     combiner_reg_env: tuple[float, float, float, float]
     combiner_reg_prim: tuple[float, float, float, float]
     blend_mode: MaterialDataBlendMode
+    z_compare: bool
+    z_update: bool
 
 
 @dataclasses.dataclass
@@ -105,6 +107,20 @@ class WORLD_RDPQ_DEFAULTS_DEFAULTS:
             prim_lod_frac = 0
             env = (1, 1, 1, 1)
             prim = (1, 1, 1, 1)
+
+    class render_mode:
+        antialias = "STANDARD"
+        fog = "STANDARD"
+        dithering = "RGB_SQUARE_A_SQUARE"
+        texture_filtering = "BILINEAR"
+        texture_perspective_correction = True
+        alpha_compare = False
+        alpha_compare_threshold = 127
+        z_compare = True
+        z_update = True
+        fixed_z = False
+        fixed_z_value = 0
+        fixed_z_deltaz = 0
 
 
 def get_blend_mode(mat_rdpq: rdpq_material_props.RDPQMaterialProperties):
@@ -277,6 +293,12 @@ def get_material_data(
         else world_rdpq_defaults.combiner.registers.prim
     )
     blend_mode = get_blend_mode(mat_rdpq)
+    if mat_rdpq.override_render_mode.override_z_compare_and_z_update:
+        z_compare = mat_rdpq.override_render_mode.z_compare
+        z_update = mat_rdpq.override_render_mode.z_update
+    else:
+        z_compare = world_rdpq_defaults.render_mode.z_compare
+        z_update = world_rdpq_defaults.render_mode.z_update
     mat_data = MaterialData(
         tex0,
         tex1,
@@ -287,6 +309,8 @@ def get_material_data(
         combiner_reg_env,
         combiner_reg_prim,
         blend_mode,
+        z_compare,
+        z_update,
     )
     return mat_data
 
@@ -503,6 +527,8 @@ def draw_mesh(
             MaterialDataBlendMode.ALPHA: "ALPHA",
             MaterialDataBlendMode.ADDITIVE: "ADDITIVE",
         }[mat.blend_mode]
+        z_compare = mat.z_compare
+        z_update = mat.z_update
     else:
         tex0_s_dim = 0
         tex0_s_translate = 0
@@ -531,6 +557,8 @@ def draw_mesh(
         combiner_reg_env = (1, 1, 1, 1)
         combiner_reg_prim = (1, 1, 1, 1)
         blend_mode = "NONE"
+        z_compare = True
+        z_update = True
 
     content = {
         "inPos": mesh.loops_co,
@@ -614,6 +642,8 @@ def draw_mesh(
         indices=mesh.loop_triangles_loops,
     )
     gpu.state.blend_set(blend_mode)
+    gpu.state.depth_test_set("LESS_EQUAL" if z_compare else "NONE")
+    gpu.state.depth_mask_set(z_update)
     batch.draw(shader)
 
 
@@ -672,17 +702,13 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
 
         with offscreen.bind():
             gpu.state.viewport_set(0, 0, width, height)
-            gpu.state.blend_set("ALPHA")  # ?
 
             gpu.matrix.load_matrix(mathutils.Matrix.Identity(4))
             gpu.matrix.load_projection_matrix(mathutils.Matrix.Identity(4))
 
-            gpu.state.depth_test_set("NONE")
-            gpu.state.depth_mask_set(False)
-
             fb = gpu.state.active_framebuffer_get()
             fb: gpu.types.GPUFrameBuffer
-            fb.clear(color=(0.1, 0.1, 0.1, 1))
+            fb.clear(color=(0.1, 0.1, 0.1, 1), depth=1)
 
             mat_data = get_material_data(world_rdpq_defaults, mat)
 
@@ -843,9 +869,6 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
 
         if 0:
             self.bind_display_space_shader(depsgraph.scene)
-
-        gpu.state.depth_test_set("LESS_EQUAL")
-        gpu.state.depth_mask_set(True)
 
         self.init_shader()
         assert self.shader is not None
