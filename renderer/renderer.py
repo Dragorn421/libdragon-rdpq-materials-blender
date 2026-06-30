@@ -51,6 +51,7 @@ class MaterialData:
     combiner_reg_env: tuple[float, float, float, float]
     combiner_reg_prim: tuple[float, float, float, float]
     blend_mode: MaterialDataBlendMode
+    alpha_compare_threshold: Optional[float]
     z_compare: bool
     z_update: bool
 
@@ -293,6 +294,25 @@ def get_material_data(
         else world_rdpq_defaults.combiner.registers.prim
     )
     blend_mode = get_blend_mode(mat_rdpq)
+    if mat_rdpq.override_render_mode.override_alpha_compare:
+        alpha_compare_threshold_int = (
+            mat_rdpq.override_render_mode.alpha_compare_threshold
+        )
+        if alpha_compare_threshold_int == 0:
+            alpha_compare_threshold_int = None
+    else:
+        if world_rdpq_defaults.render_mode.alpha_compare:
+            alpha_compare_threshold_int = (
+                world_rdpq_defaults.render_mode.alpha_compare_threshold
+            )
+            if alpha_compare_threshold_int == 0:
+                alpha_compare_threshold_int = None
+        else:
+            alpha_compare_threshold_int = None
+    if alpha_compare_threshold_int is not None:
+        alpha_compare_threshold = alpha_compare_threshold_int / 255
+    else:
+        alpha_compare_threshold = None
     if mat_rdpq.override_render_mode.override_z_compare_and_z_update:
         z_compare = mat_rdpq.override_render_mode.z_compare
         z_update = mat_rdpq.override_render_mode.z_update
@@ -309,6 +329,7 @@ def get_material_data(
         combiner_reg_env,
         combiner_reg_prim,
         blend_mode,
+        alpha_compare_threshold,
         z_compare,
         z_update,
     )
@@ -527,6 +548,12 @@ def draw_mesh(
             MaterialDataBlendMode.ALPHA: "ALPHA",
             MaterialDataBlendMode.ADDITIVE: "ADDITIVE",
         }[mat.blend_mode]
+        general_flags = 0
+        alpha_compare_threshold = mat.alpha_compare_threshold
+        if alpha_compare_threshold is not None:
+            general_flags |= magic.GENERAL_FLAG_ALPHA_COMPARE
+        else:
+            alpha_compare_threshold = 0
         z_compare = mat.z_compare
         z_update = mat.z_update
     else:
@@ -557,6 +584,8 @@ def draw_mesh(
         combiner_reg_env = (1, 1, 1, 1)
         combiner_reg_prim = (1, 1, 1, 1)
         blend_mode = "NONE"
+        alpha_compare_threshold = 0
+        general_flags = 0
         z_compare = True
         z_update = True
 
@@ -600,7 +629,10 @@ def draw_mesh(
             "i"  # tex1TScale
             "f"  # tex1TRepeats
             "i"  # tex1TFlags
+            "f"  # alphaCompareThreshold
+            "i"  # generalFlags
             "i"  # validInputs
+            "8x"
         ),
         *np.array(proj_view_mtx @ mesh.model_matrix).T.ravel(),
         *np.array(view_mtx @ mesh.model_matrix).T.ravel(),
@@ -630,6 +662,8 @@ def draw_mesh(
         tex1_t_scale,
         tex1_t_repeats,
         tex1_t_flags,
+        alpha_compare_threshold,
+        general_flags,
         valid_inputs_flags,
     )
     ubo = gpu.types.GPUUniformBuf(data)
@@ -837,6 +871,8 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
             " int   tex1TScale;"
             " float tex1TRepeats;"
             " int   tex1TFlags;"
+            " float alphaCompareThreshold;"
+            " int generalFlags;"
             " int validInputs;"
             "};"
         )

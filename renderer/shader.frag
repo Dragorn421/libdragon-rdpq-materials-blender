@@ -174,13 +174,13 @@ float combinerEvaluateCycleA(int suba, int subb, int mul, int add, float prevCyc
 void main() 
 {
     vec3 combinedRGB;
-    float combinedA;
+    float combinedAlphaA, combinedAlphaB;
     combinedRGB = combinerEvaluateCycleRGB(
         COMBINER_RGB_2A_SUBA, COMBINER_RGB_2A_SUBB,
         COMBINER_RGB_2A_MUL, COMBINER_RGB_2A_ADD,
         vec3(0), 0
     );
-    combinedA = combinerEvaluateCycleA(
+    combinedAlphaA = combinerEvaluateCycleA(
         COMBINER_A_2A_SUBA, COMBINER_A_2A_SUBB,
         COMBINER_A_2A_MUL, COMBINER_A_2A_ADD,
         0
@@ -188,12 +188,24 @@ void main()
     combinedRGB = combinerEvaluateCycleRGB(
         COMBINER_RGB_2B_SUBA, COMBINER_RGB_2B_SUBB,
         COMBINER_RGB_2B_MUL, COMBINER_RGB_2B_ADD,
-        combinedRGB, combinedA
+        combinedRGB, combinedAlphaA
     );
-    combinedA = combinerEvaluateCycleA(
+    combinedAlphaB = combinerEvaluateCycleA(
         COMBINER_A_2B_SUBA, COMBINER_A_2B_SUBB,
         COMBINER_A_2B_MUL, COMBINER_A_2B_ADD,
-        combinedA
+        combinedAlphaA
     );
-    FragColor = vec4(combinedRGB, combinedA);
+    float alpha;
+    if ((inState.generalFlags & GENERAL_FLAG_ALPHA_COMPARE) == 0) {
+        alpha = combinedAlphaB;
+    } else {
+        // Note: RDP silicon bug, compare first cycle output
+        if (combinedAlphaA >= inState.alphaCompareThreshold) {
+            // TODO is this correct? (could be alpha=1 ?)
+            alpha = combinedAlphaB;
+        } else {
+            discard;
+        }
+    }
+    FragColor = vec4(combinedRGB, alpha);
 }
