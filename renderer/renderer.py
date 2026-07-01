@@ -403,6 +403,14 @@ def get_mesh_data(
         "material_index", loop_triangles_material_index.ravel()
     )
 
+    polygons_hide = np.empty(len(mesh.polygons), np.bool_)
+    mesh.polygons.foreach_get("hide", polygons_hide)
+
+    loop_triangles_polygon_index = np.empty(len(mesh.loop_triangles), dtype=np.int32)
+    mesh.loop_triangles.foreach_get("polygon_index", loop_triangles_polygon_index)
+
+    loop_triangles_hide = polygons_hide[loop_triangles_polygon_index]
+
     loops_co = vertices_co[loops_vertex_index, :]
 
     if bpy.app.version < (4, 1, 0):
@@ -425,7 +433,11 @@ def get_mesh_data(
 
         # Get the loops indices for the triangles using mat
         np.equal(loop_triangles_material_index, mat_index, out=mat_mask)
+        mat_mask[loop_triangles_hide] = False  # mask out hidden triangles
         mat_triangles_loops = loop_triangles_loops[mat_mask, :]
+
+        if mat_triangles_loops.shape[0] == 0:
+            continue
 
         # Get the loops used by the mat-using triangles,
         # for subsetting the coordinates/normal/color buffers,
@@ -822,7 +834,7 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
         meshes: list[MeshData] = []
 
         for obj in scene.objects:
-            if obj.type == "MESH":
+            if obj.type == "MESH" and obj.visible_get():
                 meshes.extend(get_mesh_data(world_rdpq_defaults, obj, depsgraph))
 
         self.scene_data = SceneData(meshes)
