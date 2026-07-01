@@ -17,13 +17,20 @@ looks like this:
 The properties are divided in 5 boxes: Texture 0, Texture 1, Combiner,
 Blender, and Render Mode Overrides.
 
+## Render Engine
+
+This addon adds a `libdragon RDPQ materials` render engine, that must be
+selected in order to preview libdragon RDPQ material properties in Blender.
+
+![Screenshot of Render Engine selection in Blender](media/render_engine.png)
+
+For more accurate colors, it is also recommended to set the View Transform to Standard, in the Color Management panel, below the Render Engine choice.
+
 ## Transfering to Fast64
 
 If the [Fast64](https://github.com/Fast-64/fast64) addon is installed
 and enabled, the libdragon-rdpq-materials-blender addon can copy the
 properties over to Fast64 properties.
-
-This enables previewing of libdragon RDPQ material properties in Blender.
 
 If the current material is already a Fast64 material, the following options show:
 
