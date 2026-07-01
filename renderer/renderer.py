@@ -690,6 +690,8 @@ def draw_mesh(
     gpu.state.blend_set(blend_mode)
     gpu.state.depth_test_set("LESS_EQUAL" if z_compare else "NONE")
     gpu.state.depth_mask_set(z_update)
+    # TODO add backface culling option
+    gpu.state.face_culling_set("NONE")
     batch.draw(shader)
 
 
