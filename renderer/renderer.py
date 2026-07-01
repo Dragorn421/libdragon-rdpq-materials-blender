@@ -2,7 +2,7 @@ import dataclasses
 import enum
 from pathlib import Path
 import struct
-from typing import Optional, Sequence, TYPE_CHECKING
+from typing import Optional, Sequence, TYPE_CHECKING, Union
 
 import bpy
 import mathutils
@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 import numpy as np
 
 from .. import rdpq_material_props
+from .. import rdpq_world_defaults
 from .. import util
 from . import magic
 
@@ -97,33 +98,6 @@ COMBINER_MAP = {
 }
 
 
-# TODO refactor: merge WORLD_RDPQ_DEFAULTS_DEFAULTS from sync_to_fast64 with this one
-class WORLD_RDPQ_DEFAULTS_DEFAULTS:
-    placeholders = []
-
-    class combiner:
-        class registers:
-            k4 = 0
-            k5 = 0
-            prim_lod_frac = 0
-            env = (1, 1, 1, 1)
-            prim = (1, 1, 1, 1)
-
-    class render_mode:
-        antialias = "STANDARD"
-        fog = "STANDARD"
-        dithering = "RGB_SQUARE_A_SQUARE"
-        texture_filtering = "BILINEAR"
-        texture_perspective_correction = True
-        alpha_compare = False
-        alpha_compare_threshold = 127
-        z_compare = True
-        z_update = True
-        fixed_z = False
-        fixed_z_value = 0
-        fixed_z_deltaz = 0
-
-
 def get_blend_mode(mat_rdpq: rdpq_material_props.RDPQMaterialProperties):
     # TODO for custom 1-pass and 2-passes, try to guess
     if mat_rdpq.blender.preset == "CUSTOM_1_PASS":
@@ -140,7 +114,10 @@ def get_blend_mode(mat_rdpq: rdpq_material_props.RDPQMaterialProperties):
 
 
 def get_material_data(
-    world_rdpq_defaults: WORLD_RDPQ_DEFAULTS_DEFAULTS,
+    world_rdpq_defaults: Union[
+        rdpq_world_defaults.RDPQWorldDefaultsProperties,
+        rdpq_world_defaults.WORLD_RDPQ_DEFAULTS_DEFAULTS_type,
+    ],
     mat: bpy.types.Material,
 ):
     mat_rdpq = util.LIBDRAGON_RDPQ(mat)
@@ -337,7 +314,10 @@ def get_material_data(
 
 
 def get_mesh_data(
-    world_rdpq_defaults: WORLD_RDPQ_DEFAULTS_DEFAULTS,
+    world_rdpq_defaults: Union[
+        rdpq_world_defaults.RDPQWorldDefaultsProperties,
+        rdpq_world_defaults.WORLD_RDPQ_DEFAULTS_DEFAULTS_type,
+    ],
     obj: bpy.types.Object,
     depsgraph: bpy.types.Depsgraph,
 ):
@@ -716,7 +696,7 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
         if scene.world is not None:
             world_rdpq_defaults = util.LIBDRAGON_RDPQ(scene.world).defaults
         else:
-            world_rdpq_defaults = WORLD_RDPQ_DEFAULTS_DEFAULTS
+            world_rdpq_defaults = rdpq_world_defaults.WORLD_RDPQ_DEFAULTS_DEFAULTS
 
         scale = scene.render.resolution_percentage / 100
         width = int(scene.render.resolution_x * scale)
@@ -831,7 +811,7 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
         if scene.world is not None:
             world_rdpq_defaults = util.LIBDRAGON_RDPQ(scene.world).defaults
         else:
-            world_rdpq_defaults = WORLD_RDPQ_DEFAULTS_DEFAULTS
+            world_rdpq_defaults = rdpq_world_defaults.WORLD_RDPQ_DEFAULTS_DEFAULTS
 
         meshes: list[MeshData] = []
 

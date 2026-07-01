@@ -3,6 +3,7 @@ from typing import Optional
 import bpy
 
 from . import rdpq_material_props
+from . import rdpq_world_defaults
 from . import util
 
 SYNCED_MATERIALS: dict[bpy.types.Material, object] = {}
@@ -104,32 +105,6 @@ COMBINER_1_MUXES_FAST64_MAP.update(
 )
 
 
-class WORLD_RDPQ_DEFAULTS_DEFAULTS:
-    placeholders = []
-
-    class combiner:
-        class registers:
-            k4 = 0
-            k5 = 0
-            prim_lod_frac = 0
-            env = (1, 1, 1, 1)
-            prim = (1, 1, 1, 1)
-
-    class render_mode:
-        antialias = "STANDARD"
-        fog = "STANDARD"
-        dithering = "RGB_SQUARE_A_SQUARE"
-        texture_filtering = "BILINEAR"
-        texture_perspective_correction = True
-        alpha_compare = False
-        alpha_compare_threshold = 127
-        z_compare = True
-        z_update = True
-        fixed_z = False
-        fixed_z_value = 0
-        fixed_z_deltaz = 0
-
-
 def rdpq_material_props_to_fast64_props(
     mat: bpy.types.Material, world: Optional[bpy.types.World]
 ):
@@ -138,7 +113,7 @@ def rdpq_material_props_to_fast64_props(
     if world is not None:
         world_rdpq_defaults = util.LIBDRAGON_RDPQ(world).defaults
     else:
-        world_rdpq_defaults = WORLD_RDPQ_DEFAULTS_DEFAULTS
+        world_rdpq_defaults = rdpq_world_defaults.WORLD_RDPQ_DEFAULTS_DEFAULTS
 
     # Texture
 
