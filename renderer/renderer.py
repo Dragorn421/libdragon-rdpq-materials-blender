@@ -38,7 +38,18 @@ class MaterialDataTex:
 class MaterialDataBlendMode(enum.Enum):
     NONE = enum.auto()
     ALPHA = enum.auto()
+    ALPHA_CONST = enum.auto()
     ADDITIVE = enum.auto()
+
+
+@dataclasses.dataclass
+class MaterialDataBlend:
+    mode: MaterialDataBlendMode
+
+
+@dataclasses.dataclass
+class MaterialDataBlendConst(MaterialDataBlend):
+    const: float
 
 
 @dataclasses.dataclass
@@ -51,7 +62,7 @@ class MaterialData:
     combiner_reg_prim_lod_frac: float
     combiner_reg_env: tuple[float, float, float, float]
     combiner_reg_prim: tuple[float, float, float, float]
-    blend_mode: MaterialDataBlendMode
+    blend: MaterialDataBlend
     alpha_compare_threshold: Optional[float]
     z_compare: bool
     z_update: bool
@@ -98,19 +109,25 @@ COMBINER_MAP = {
 }
 
 
-def get_blend_mode(mat_rdpq: rdpq_material_props.RDPQMaterialProperties):
+def get_material_data_blend(mat_rdpq: rdpq_material_props.RDPQMaterialProperties):
     # TODO for custom 1-pass and 2-passes, try to guess
     if mat_rdpq.blender.preset == "CUSTOM_1_PASS":
-        return MaterialDataBlendMode.NONE
+        return MaterialDataBlend(MaterialDataBlendMode.NONE)
     elif mat_rdpq.blender.preset == "CUSTOM_2_PASSES":
-        return MaterialDataBlendMode.NONE
+        return MaterialDataBlend(MaterialDataBlendMode.NONE)
+    elif mat_rdpq.blender.preset == "MULTIPLY_CONST":
+        return MaterialDataBlendConst(
+            MaterialDataBlendMode.ALPHA_CONST,
+            mat_rdpq.blender.fog_color[3],
+        )
     else:
-        return {
-            "NONE": MaterialDataBlendMode.NONE,
-            "MULTIPLY": MaterialDataBlendMode.ALPHA,
-            "MULTIPLY_CONST": MaterialDataBlendMode.ALPHA,
-            "ADDITIVE": MaterialDataBlendMode.ADDITIVE,
-        }[mat_rdpq.blender.preset]
+        return MaterialDataBlend(
+            {
+                "NONE": MaterialDataBlendMode.NONE,
+                "MULTIPLY": MaterialDataBlendMode.ALPHA,
+                "ADDITIVE": MaterialDataBlendMode.ADDITIVE,
+            }[mat_rdpq.blender.preset]
+        )
 
 
 def get_material_data(
@@ -308,7 +325,7 @@ def get_material_data(
         if mat_rdpq.combiner.registers.set_prim
         else world_rdpq_defaults.combiner.registers.prim
     )
-    blend_mode = get_blend_mode(mat_rdpq)
+    blend = get_material_data_blend(mat_rdpq)
     if mat_rdpq.override_render_mode.override_alpha_compare:
         alpha_compare_threshold_int = (
             mat_rdpq.override_render_mode.alpha_compare_threshold
@@ -343,7 +360,7 @@ def get_material_data(
         combiner_reg_prim_lod_frac,
         combiner_reg_env,
         combiner_reg_prim,
-        blend_mode,
+        blend,
         alpha_compare_threshold,
         z_compare,
         z_update,
@@ -576,9 +593,16 @@ def draw_mesh(
         blend_mode = {
             MaterialDataBlendMode.NONE: "NONE",
             MaterialDataBlendMode.ALPHA: "ALPHA",
+            MaterialDataBlendMode.ALPHA_CONST: "ALPHA",
             MaterialDataBlendMode.ADDITIVE: "ADDITIVE",
-        }[mat.blend_mode]
+        }[mat.blend.mode]
         general_flags = 0
+        if mat.blend.mode == MaterialDataBlendMode.ALPHA_CONST:
+            assert isinstance(mat.blend, MaterialDataBlendConst)
+            alpha_override = mat.blend.const
+            general_flags |= magic.GENERAL_FLAG_ALPHA_OVERRIDE
+        else:
+            alpha_override = 0
         alpha_compare_threshold = mat.alpha_compare_threshold
         if alpha_compare_threshold is not None:
             general_flags |= magic.GENERAL_FLAG_ALPHA_COMPARE
@@ -614,6 +638,7 @@ def draw_mesh(
         combiner_reg_env = (1, 1, 1, 1)
         combiner_reg_prim = (1, 1, 1, 1)
         blend_mode = "NONE"
+        alpha_override = 0
         alpha_compare_threshold = 0
         general_flags = 0
         z_compare = True
@@ -659,10 +684,11 @@ def draw_mesh(
             "i"  # tex1TScale
             "f"  # tex1TRepeats
             "i"  # tex1TFlags
+            "f"  # alphaOverride
             "f"  # alphaCompareThreshold
             "i"  # generalFlags
             "i"  # validInputs
-            "8x"
+            "4x"
         ),
         *np.array(proj_view_mtx @ mesh.model_matrix).T.ravel(),
         *np.array(view_mtx @ mesh.model_matrix).T.ravel(),
@@ -692,6 +718,7 @@ def draw_mesh(
         tex1_t_scale,
         tex1_t_repeats,
         tex1_t_flags,
+        alpha_override,
         alpha_compare_threshold,
         general_flags,
         valid_inputs_flags,
@@ -903,6 +930,7 @@ class RDPQMaterialsRenderEngine(bpy.types.RenderEngine):
             " int   tex1TScale;"
             " float tex1TRepeats;"
             " int   tex1TFlags;"
+            " float alphaOverride;"
             " float alphaCompareThreshold;"
             " int generalFlags;"
             " int validInputs;"

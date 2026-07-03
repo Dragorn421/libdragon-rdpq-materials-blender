@@ -196,16 +196,16 @@ void main()
         combinedAlphaA
     );
     float alpha;
-    if ((inState.generalFlags & GENERAL_FLAG_ALPHA_COMPARE) == 0) {
-        alpha = combinedAlphaB;
-    } else {
+    if ((inState.generalFlags & GENERAL_FLAG_ALPHA_COMPARE) != 0) {
         // Note: RDP silicon bug, compare first cycle output
-        if (combinedAlphaA >= inState.alphaCompareThreshold) {
-            // TODO is this correct? (could be alpha=1 ?)
-            alpha = combinedAlphaB;
-        } else {
+        if (combinedAlphaA < inState.alphaCompareThreshold) {
             discard;
         }
+    }
+    if ((inState.generalFlags & GENERAL_FLAG_ALPHA_OVERRIDE) != 0) {
+        alpha = inState.alphaOverride;
+    } else {
+        alpha = combinedAlphaB;
     }
     FragColor = vec4(combinedRGB, alpha);
 }
