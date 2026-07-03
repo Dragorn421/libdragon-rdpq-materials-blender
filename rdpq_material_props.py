@@ -368,42 +368,50 @@ class RDPQMaterialCombinerProperties(bpy.types.PropertyGroup):
         name="RGB A",
         description="RGB A Input",
         items=COMB1_RGB_SUBA_ITEMS,
+        default="0",
     )
     rgb_B: bpy.props.EnumProperty(
         name="RGB B",
         description="RGB B Input",
         items=COMB1_RGB_SUBB_ITEMS,
+        default="0",
     )
     rgb_C: bpy.props.EnumProperty(
         name="RGB C",
         description="RGB C Input",
         items=COMB1_RGB_MUL_ITEMS,
+        default="0",
     )
     rgb_D: bpy.props.EnumProperty(
         name="RGB D",
         description="RGB D Input",
         items=COMB1_RGB_ADD_ITEMS,
+        default="TEX0",
     )
 
     alpha_A: bpy.props.EnumProperty(
         name="Alpha A",
         description="RGB A Input",
         items=COMB1_ALPHA_ADDSUB_ITEMS,
+        default="0",
     )
     alpha_B: bpy.props.EnumProperty(
         name="Alpha B",
         description="RGB B Input",
         items=COMB1_ALPHA_ADDSUB_ITEMS,
+        default="0",
     )
     alpha_C: bpy.props.EnumProperty(
         name="Alpha C",
         description="RGB C Input",
         items=COMB1_ALPHA_MUL_ITEMS,
+        default="0",
     )
     alpha_D: bpy.props.EnumProperty(
         name="Alpha D",
         description="RGB D Input",
         items=COMB1_ALPHA_ADDSUB_ITEMS,
+        default="TEX0",
     )
 
     # Two-cycle
@@ -414,42 +422,50 @@ class RDPQMaterialCombinerProperties(bpy.types.PropertyGroup):
         name="RGB A 1",
         description="RGB A Input (First Cycle)",
         items=COMB2A_RGB_SUBA_ITEMS,
+        default="0",
     )
     rgb_B_0: bpy.props.EnumProperty(
         name="RGB B 1",
         description="RGB B Input (First Cycle)",
         items=COMB2A_RGB_SUBB_ITEMS,
+        default="0",
     )
     rgb_C_0: bpy.props.EnumProperty(
         name="RGB C 1",
         description="RGB C Input (First Cycle)",
         items=COMB2A_RGB_MUL_ITEMS,
+        default="0",
     )
     rgb_D_0: bpy.props.EnumProperty(
         name="RGB D 1",
         description="RGB D Input (First Cycle)",
         items=COMB2A_RGB_ADD_ITEMS,
+        default="TEX0",
     )
 
     alpha_A_0: bpy.props.EnumProperty(
         name="Alpha A 1",
         description="Alpha A Input (First Cycle)",
         items=COMB2A_ALPHA_ADDSUB_ITEMS,
+        default="0",
     )
     alpha_B_0: bpy.props.EnumProperty(
         name="Alpha B 1",
         description="Alpha B Input (First Cycle)",
         items=COMB2A_ALPHA_ADDSUB_ITEMS,
+        default="0",
     )
     alpha_C_0: bpy.props.EnumProperty(
         name="Alpha C 1",
         description="Alpha C Input (First Cycle)",
         items=COMB2A_ALPHA_MUL_ITEMS,
+        default="0",
     )
     alpha_D_0: bpy.props.EnumProperty(
         name="Alpha D 1",
         description="Alpha D Input (First Cycle)",
         items=COMB2A_ALPHA_ADDSUB_ITEMS,
+        default="TEX0",
     )
 
     # Second Cycle
@@ -458,42 +474,50 @@ class RDPQMaterialCombinerProperties(bpy.types.PropertyGroup):
         name="RGB A 2",
         description="RGB A Input (Second Cycle)",
         items=COMB2B_RGB_SUBA_ITEMS,
+        default="0",
     )
     rgb_B_1: bpy.props.EnumProperty(
         name="RGB B 2",
         description="RGB B Input (Second Cycle)",
         items=COMB2B_RGB_SUBB_ITEMS,
+        default="0",
     )
     rgb_C_1: bpy.props.EnumProperty(
         name="RGB C 2",
         description="RGB C Input (Second Cycle)",
         items=COMB2B_RGB_MUL_ITEMS,
+        default="0",
     )
     rgb_D_1: bpy.props.EnumProperty(
         name="RGB D 2",
         description="RGB D Input (Second Cycle)",
         items=COMB2B_RGB_ADD_ITEMS,
+        default="COMBINED",
     )
 
     alpha_A_1: bpy.props.EnumProperty(
         name="Alpha A 2",
         description="Alpha A Input (Second Cycle)",
         items=COMB2B_ALPHA_ADDSUB_ITEMS,
+        default="0",
     )
     alpha_B_1: bpy.props.EnumProperty(
         name="Alpha B 2",
         description="Alpha B Input (Second Cycle)",
         items=COMB2B_ALPHA_ADDSUB_ITEMS,
+        default="0",
     )
     alpha_C_1: bpy.props.EnumProperty(
         name="Alpha C 2",
         description="Alpha C Input (Second Cycle)",
         items=COMB2B_ALPHA_MUL_ITEMS,
+        default="0",
     )
     alpha_D_1: bpy.props.EnumProperty(
         name="Alpha D 2",
         description="Alpha D Input (Second Cycle)",
         items=COMB2B_ALPHA_ADDSUB_ITEMS,
+        default="COMBINED",
     )
 
     registers_: bpy.props.PointerProperty(type=RDPQMaterialCombinerRegistersProperties)
@@ -566,6 +590,7 @@ class RDPQMaterialBlenderProperties(bpy.types.PropertyGroup):
             ("CUSTOM_1_PASS", "Custom 1 Pass", ""),
             ("CUSTOM_2_PASSES", "Custom 2 Passes", ""),
         ),
+        default="NONE",
         update=rdpq_material_props_logic.on_update_blender_preset,
     )
 
@@ -574,21 +599,25 @@ class RDPQMaterialBlenderProperties(bpy.types.PropertyGroup):
         name="P",
         description="Blender input P",
         items=BLEND1_A_ITEMS,
+        default="IN_RGB",
     )
     a: bpy.props.EnumProperty(
         name="A",
         description="Blender input A",
         items=BLEND1_B1_ITEMS,
+        default="IN_ALPHA",
     )
     q: bpy.props.EnumProperty(
         name="Q",
         description="Blender input Q",
         items=BLEND1_A_ITEMS,
+        default="IN_RGB",
     )
     b: bpy.props.EnumProperty(
         name="B",
         description="Blender input B",
         items=BLEND1_B2_ITEMS,
+        default="INV_MUX_ALPHA",
     )
 
     # Two-cycle muxes
@@ -597,42 +626,50 @@ class RDPQMaterialBlenderProperties(bpy.types.PropertyGroup):
         name="P1",
         description="Blender input P (first cycle)",
         items=BLEND2A_A_ITEMS,
+        default="IN_RGB",
     )
     a_0: bpy.props.EnumProperty(
         name="A1",
         description="Blender input A (first cycle)",
         items=BLEND2A_B1_ITEMS,
+        default="IN_ALPHA",
     )
     q_0: bpy.props.EnumProperty(
         name="Q1",
         description="Blender input Q (first cycle)",
         items=BLEND2A_A_ITEMS,
+        default="IN_RGB",
     )
     b_0: bpy.props.EnumProperty(
         name="B1",
         description="Blender input B (first cycle)",
         items=BLEND2A_B2_ITEMS,
+        default="INV_MUX_ALPHA",
     )
     # Second cycle
     p_1: bpy.props.EnumProperty(
         name="P2",
         description="Blender input P (second cycle)",
         items=BLEND2B_A_ITEMS,
+        default="CYCLE1_RGB",
     )
     a_1: bpy.props.EnumProperty(
         name="A2",
         description="Blender input A (second cycle)",
         items=BLEND2B_B1_ITEMS,
+        default="IN_ALPHA",
     )
     q_1: bpy.props.EnumProperty(
         name="Q2",
         description="Blender input Q (second cycle)",
         items=BLEND2B_A_ITEMS,
+        default="CYCLE1_RGB",
     )
     b_1: bpy.props.EnumProperty(
         name="B2",
         description="Blender input B (second cycle)",
         items=BLEND2B_B2_ITEMS,
+        default="INV_MUX_ALPHA",
     )
 
     blend_color: bpy.props.FloatVectorProperty(
