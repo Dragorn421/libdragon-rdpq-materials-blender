@@ -162,84 +162,122 @@ def get_material_data(
     else:
         tex1 = None
     combiner_words = [0, 0, 0, 0]
+    if mat_rdpq.combiner.preset == "CUSTOM_1_PASS":
+        # Handle 1-pass combiners by passing the second cycle as (0,0,0,combined)
+        combiner_rgb_A_0 = mat_rdpq.combiner.rgb_A
+        combiner_rgb_B_0 = mat_rdpq.combiner.rgb_B
+        combiner_rgb_C_0 = mat_rdpq.combiner.rgb_C
+        combiner_rgb_D_0 = mat_rdpq.combiner.rgb_D
+        combiner_rgb_A_1 = "0"
+        combiner_rgb_B_1 = "0"
+        combiner_rgb_C_1 = "0"
+        combiner_rgb_D_1 = "COMBINED"
+        combiner_alpha_A_0 = mat_rdpq.combiner.alpha_A
+        combiner_alpha_B_0 = mat_rdpq.combiner.alpha_B
+        combiner_alpha_C_0 = mat_rdpq.combiner.alpha_C
+        combiner_alpha_D_0 = mat_rdpq.combiner.alpha_D
+        combiner_alpha_A_1 = "0"
+        combiner_alpha_B_1 = "0"
+        combiner_alpha_C_1 = "0"
+        combiner_alpha_D_1 = "COMBINED"
+    else:
+        # Presets are automatically applied to the (rgb|alpha)_[ABCD](_[01])? props,
+        # so this handles all presets as well as 2-passes combiners
+        # (see on_update_combiner_preset)
+        combiner_rgb_A_0 = mat_rdpq.combiner.rgb_A_0
+        combiner_rgb_B_0 = mat_rdpq.combiner.rgb_B_0
+        combiner_rgb_C_0 = mat_rdpq.combiner.rgb_C_0
+        combiner_rgb_D_0 = mat_rdpq.combiner.rgb_D_0
+        combiner_rgb_A_1 = mat_rdpq.combiner.rgb_A_1
+        combiner_rgb_B_1 = mat_rdpq.combiner.rgb_B_1
+        combiner_rgb_C_1 = mat_rdpq.combiner.rgb_C_1
+        combiner_rgb_D_1 = mat_rdpq.combiner.rgb_D_1
+        combiner_alpha_A_0 = mat_rdpq.combiner.alpha_A_0
+        combiner_alpha_B_0 = mat_rdpq.combiner.alpha_B_0
+        combiner_alpha_C_0 = mat_rdpq.combiner.alpha_C_0
+        combiner_alpha_D_0 = mat_rdpq.combiner.alpha_D_0
+        combiner_alpha_A_1 = mat_rdpq.combiner.alpha_A_1
+        combiner_alpha_B_1 = mat_rdpq.combiner.alpha_B_1
+        combiner_alpha_C_1 = mat_rdpq.combiner.alpha_C_1
+        combiner_alpha_D_1 = mat_rdpq.combiner.alpha_D_1
     for slot, shift, word in (
         (
-            mat_rdpq.combiner.rgb_A_0,
+            combiner_rgb_A_0,
             magic.COMBINER_RGB_2A_SUBA_SHIFT,
             magic.COMBINER_RGB_2A_SUBA_WORD,
         ),
         (
-            mat_rdpq.combiner.rgb_B_0,
+            combiner_rgb_B_0,
             magic.COMBINER_RGB_2A_SUBB_SHIFT,
             magic.COMBINER_RGB_2A_SUBB_WORD,
         ),
         (
-            mat_rdpq.combiner.rgb_C_0,
+            combiner_rgb_C_0,
             magic.COMBINER_RGB_2A_MUL_SHIFT,
             magic.COMBINER_RGB_2A_MUL_WORD,
         ),
         (
-            mat_rdpq.combiner.rgb_D_0,
+            combiner_rgb_D_0,
             magic.COMBINER_RGB_2A_ADD_SHIFT,
             magic.COMBINER_RGB_2A_ADD_WORD,
         ),
         (
-            mat_rdpq.combiner.rgb_A_1,
+            combiner_rgb_A_1,
             magic.COMBINER_RGB_2B_SUBA_SHIFT,
             magic.COMBINER_RGB_2B_SUBA_WORD,
         ),
         (
-            mat_rdpq.combiner.rgb_B_1,
+            combiner_rgb_B_1,
             magic.COMBINER_RGB_2B_SUBB_SHIFT,
             magic.COMBINER_RGB_2B_SUBB_WORD,
         ),
         (
-            mat_rdpq.combiner.rgb_C_1,
+            combiner_rgb_C_1,
             magic.COMBINER_RGB_2B_MUL_SHIFT,
             magic.COMBINER_RGB_2B_MUL_WORD,
         ),
         (
-            mat_rdpq.combiner.rgb_D_1,
+            combiner_rgb_D_1,
             magic.COMBINER_RGB_2B_ADD_SHIFT,
             magic.COMBINER_RGB_2B_ADD_WORD,
         ),
         (
-            mat_rdpq.combiner.alpha_A_0,
+            combiner_alpha_A_0,
             magic.COMBINER_A_2A_SUBA_SHIFT,
             magic.COMBINER_A_2A_SUBA_WORD,
         ),
         (
-            mat_rdpq.combiner.alpha_B_0,
+            combiner_alpha_B_0,
             magic.COMBINER_A_2A_SUBB_SHIFT,
             magic.COMBINER_A_2A_SUBB_WORD,
         ),
         (
-            mat_rdpq.combiner.alpha_C_0,
+            combiner_alpha_C_0,
             magic.COMBINER_A_2A_MUL_SHIFT,
             magic.COMBINER_A_2A_MUL_WORD,
         ),
         (
-            mat_rdpq.combiner.alpha_D_0,
+            combiner_alpha_D_0,
             magic.COMBINER_A_2A_ADD_SHIFT,
             magic.COMBINER_A_2A_ADD_WORD,
         ),
         (
-            mat_rdpq.combiner.alpha_A_1,
+            combiner_alpha_A_1,
             magic.COMBINER_A_2B_SUBA_SHIFT,
             magic.COMBINER_A_2B_SUBA_WORD,
         ),
         (
-            mat_rdpq.combiner.alpha_B_1,
+            combiner_alpha_B_1,
             magic.COMBINER_A_2B_SUBB_SHIFT,
             magic.COMBINER_A_2B_SUBB_WORD,
         ),
         (
-            mat_rdpq.combiner.alpha_C_1,
+            combiner_alpha_C_1,
             magic.COMBINER_A_2B_MUL_SHIFT,
             magic.COMBINER_A_2B_MUL_WORD,
         ),
         (
-            mat_rdpq.combiner.alpha_D_1,
+            combiner_alpha_D_1,
             magic.COMBINER_A_2B_ADD_SHIFT,
             magic.COMBINER_A_2B_ADD_WORD,
         ),
