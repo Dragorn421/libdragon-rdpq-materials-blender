@@ -162,7 +162,7 @@ def rdpq_material_properties_to_dict(
     else:
         mat_data["blender.mode"] = mat_rdpq.blender.preset.lower()
         if mat_rdpq.blender.preset == "MULTIPLY_CONST":
-            mat_data["blender.const"] = str(mat_rdpq.blender.fog_color[3])
+            mat_data["blender.const"] = str(mat_rdpq.blender.fog_alpha)
 
     if mat_rdpq.override_render_mode.override_antialias:
         mat_data["rm.antialias"] = mat_rdpq.override_render_mode.antialias.lower()

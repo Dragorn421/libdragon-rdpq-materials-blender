@@ -118,7 +118,7 @@ def get_material_data_blend(mat_rdpq: rdpq_material_props.RDPQMaterialProperties
     elif mat_rdpq.blender.preset == "MULTIPLY_CONST":
         return MaterialDataBlendConst(
             MaterialDataBlendMode.ALPHA_CONST,
-            mat_rdpq.blender.fog_color[3],
+            mat_rdpq.blender.fog_alpha,
         )
     else:
         return MaterialDataBlend(

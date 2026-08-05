@@ -297,6 +297,7 @@ class RDPQMaterialPanel(bpy.types.Panel):
             box.prop(mat_rdpq.blender, "b_1")
         prop_split(box, mat_rdpq.blender, "blend_color")
         prop_split(box, mat_rdpq.blender, "fog_color")
+        prop_split(box, mat_rdpq.blender, "fog_alpha")
 
         box = layout.box()
 

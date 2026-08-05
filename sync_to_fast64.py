@@ -298,7 +298,7 @@ def rdpq_material_props_to_fast64_props(
 
     # blend_color is set below
     mat_fast64.set_fog = True
-    mat_fast64.fog_color = mat_rdpq.blender.fog_color
+    mat_fast64.fog_color = (*mat_rdpq.blender.fog_color, mat_rdpq.blender.fog_alpha)
 
     # Overrides
 

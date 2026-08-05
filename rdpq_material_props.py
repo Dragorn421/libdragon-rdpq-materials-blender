@@ -684,11 +684,18 @@ class RDPQMaterialBlenderProperties(bpy.types.PropertyGroup):
     fog_color: bpy.props.FloatVectorProperty(
         name="Fog Color",
         description="",
-        default=(1, 1, 1, 1),
+        default=(1, 1, 1),
         min=0,
         max=1,
         subtype="COLOR",
-        size=4,
+        size=3,
+    )
+    fog_alpha: bpy.props.FloatProperty(
+        name="Fog Alpha",
+        description="",
+        default=1,
+        min=0,
+        max=1,
     )
 
 
@@ -976,6 +983,7 @@ LIBDRAGON_RDPQ_PROPS_LIST = RecursivePropsList(
                         "b_1",
                         "blend_color",
                         "fog_color",
+                        "fog_alpha",
                     ),
                     {},
                 ),
