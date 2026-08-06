@@ -295,9 +295,15 @@ class RDPQMaterialPanel(bpy.types.Panel):
             box.prop(mat_rdpq.blender, "a_1")
             box.prop(mat_rdpq.blender, "q_1")
             box.prop(mat_rdpq.blender, "b_1")
+        if mat_rdpq.blender.preset == "MULTIPLY_CONST":
+            box.use_property_split = True
+            box.use_property_decorate = False
+            box.prop(mat_rdpq.blender, "fog_alpha", text="Const")
+            box.use_property_split = False
         prop_split(box, mat_rdpq.blender, "blend_color")
         prop_split(box, mat_rdpq.blender, "fog_color")
-        prop_split(box, mat_rdpq.blender, "fog_alpha")
+        if mat_rdpq.blender.preset != "MULTIPLY_CONST":
+            prop_split(box, mat_rdpq.blender, "fog_alpha")
 
         box = layout.box()
 
