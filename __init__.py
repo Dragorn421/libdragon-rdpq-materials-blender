@@ -60,11 +60,21 @@ class RDPQWorldProperties(bpy.types.PropertyGroup):
         return self.defaults_
 
 
+class UsePropSplit:
+    def __init__(self, layout: bpy.types.UILayout):
+        self.layout = layout
+
+    def __enter__(self):
+        self.layout.use_property_split = True
+        self.layout.use_property_decorate = False
+
+    def __exit__(self, exc_type, exc, tb):
+        self.layout.use_property_split = False
+
+
 def prop_split(layout: bpy.types.UILayout, data, prop_name: str):
-    layout.use_property_split = True
-    layout.use_property_decorate = False
-    layout.prop(data, prop_name)
-    layout.use_property_split = False
+    with UsePropSplit(layout):
+        layout.prop(data, prop_name)
 
 
 class RDPQWorldPanel(bpy.types.Panel):
@@ -85,6 +95,7 @@ class RDPQWorldPanel(bpy.types.Panel):
         assert world is not None
         world_rdpq = util.LIBDRAGON_RDPQ(world)
         wdcr = world_rdpq.defaults.combiner.registers
+        wdbr = world_rdpq.defaults.blender.registers
         wdrm = world_rdpq.defaults.render_mode
 
         layout.prop(wdcr, "k4")
@@ -92,6 +103,10 @@ class RDPQWorldPanel(bpy.types.Panel):
         layout.prop(wdcr, "prim_lod_frac")
         layout.prop(wdcr, "env")
         layout.prop(wdcr, "prim")
+
+        layout.prop(wdbr, "blend_color_rgb")
+        layout.prop(wdbr, "fog_color_rgb")
+        layout.prop(wdbr, "fog_color_alpha")
 
         layout.prop(wdrm, "antialias")
         layout.prop(wdrm, "fog")
@@ -296,14 +311,20 @@ class RDPQMaterialPanel(bpy.types.Panel):
             box.prop(mat_rdpq.blender, "q_1")
             box.prop(mat_rdpq.blender, "b_1")
         if mat_rdpq.blender.preset == "MULTIPLY_CONST":
-            box.use_property_split = True
-            box.use_property_decorate = False
-            box.prop(mat_rdpq.blender, "fog_alpha", text="Const")
-            box.use_property_split = False
-        prop_split(box, mat_rdpq.blender, "blend_color")
-        prop_split(box, mat_rdpq.blender, "fog_color")
+            with UsePropSplit(box):
+                box.prop(mat_rdpq.blender.registers, "fog_color_alpha", text="Const")
+
+        def prop_blender_register(set_prop, prop):
+            row = box.row()
+            row.prop(mat_rdpq.blender.registers, set_prop, text="")
+            col = row.column()
+            col.prop(mat_rdpq.blender.registers, prop)
+            col.enabled = getattr(mat_rdpq.blender.registers, set_prop)
+
+        prop_blender_register("set_blend_color_rgb", "blend_color_rgb")
+        prop_blender_register("set_fog_color_rgb", "fog_color_rgb")
         if mat_rdpq.blender.preset != "MULTIPLY_CONST":
-            prop_split(box, mat_rdpq.blender, "fog_alpha")
+            prop_blender_register("set_fog_color_alpha", "fog_color_alpha")
 
         box = layout.box()
 
@@ -339,6 +360,8 @@ classes = (
     rdpq_world_defaults.RDPQWorldDefaultsPlaceholderProperties,
     rdpq_world_defaults.RDPQWorldDefaultsCombinerRegistersProperties,
     rdpq_world_defaults.RDPQWorldDefaultsCombinerProperties,
+    rdpq_world_defaults.RDPQWorldDefaultsBlenderRegistersProperties,
+    rdpq_world_defaults.RDPQWorldDefaultsBlenderProperties,
     rdpq_world_defaults.RDPQWorldDefaultsRenderModeProperties,
     rdpq_world_defaults.RDPQWorldDefaultsProperties,
     RDPQWorldProperties,
@@ -346,6 +369,7 @@ classes = (
     rdpq_material_props.RDPQMaterialTextureProperties,
     rdpq_material_props.RDPQMaterialCombinerRegistersProperties,
     rdpq_material_props.RDPQMaterialCombinerProperties,
+    rdpq_material_props.RDPQMaterialBlenderRegistersProperties,
     rdpq_material_props.RDPQMaterialBlenderProperties,
     rdpq_material_props.RDPQMaterialOverrideRenderModeProperties,
     rdpq_material_props.RDPQMaterialProperties,

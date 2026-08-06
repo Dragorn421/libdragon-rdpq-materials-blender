@@ -297,8 +297,25 @@ def rdpq_material_props_to_fast64_props(
     mat_fast64.rdp_settings.blend_b2 = BLENDER_MUXES_FAST64_MAP[mat_rdpq.blender.b_1]
 
     # blend_color is set below
-    mat_fast64.set_fog = True
-    mat_fast64.fog_color = (*mat_rdpq.blender.fog_color, mat_rdpq.blender.fog_alpha)
+    set_fog_color_alpha = (
+        mat_rdpq.blender.preset == "MULTIPLY_CONST"
+        or mat_rdpq.blender.registers.set_fog_color_alpha
+    )
+    mat_fast64.set_fog = (
+        mat_rdpq.blender.registers.set_fog_color_rgb or set_fog_color_alpha
+    )
+    mat_fast64.fog_color = (
+        *(
+            mat_rdpq.blender.registers.fog_color_rgb
+            if mat_rdpq.blender.registers.set_fog_color_rgb
+            else world_rdpq_defaults.blender.registers.fog_color_rgb
+        ),
+        (
+            mat_rdpq.blender.registers.fog_color_alpha
+            if set_fog_color_alpha
+            else world_rdpq_defaults.blender.registers.fog_color_alpha
+        ),
+    )
 
     # Overrides
 
@@ -378,9 +395,16 @@ def rdpq_material_props_to_fast64_props(
             mat_fast64.rdp_settings.g_mdsft_alpha_compare = "G_AC_NONE"
             alpha_compare_threshold = None
 
-    mat_fast64.set_blend = True
+    mat_fast64.set_blend = (
+        mat_rdpq.blender.registers.set_blend_color_rgb
+        or alpha_compare_threshold is not None
+    )
     mat_fast64.blend_color = (
-        *mat_rdpq.blender.blend_color,
+        *(
+            mat_rdpq.blender.registers.blend_color_rgb
+            if mat_rdpq.blender.registers.set_blend_color_rgb
+            else world_rdpq_defaults.blender.registers.blend_color_rgb
+        ),
         1 if alpha_compare_threshold is None else (alpha_compare_threshold / 255),
     )
 

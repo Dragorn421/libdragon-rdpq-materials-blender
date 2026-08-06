@@ -58,6 +58,44 @@ class RDPQWorldDefaultsCombinerProperties(bpy.types.PropertyGroup):
         return self.registers_
 
 
+class RDPQWorldDefaultsBlenderRegistersProperties(bpy.types.PropertyGroup):
+    blend_color_rgb: bpy.props.FloatVectorProperty(
+        name="Blend Color",
+        description="",
+        default=(1, 1, 1),
+        min=0,
+        max=1,
+        subtype="COLOR",
+        size=3,
+    )
+    fog_color_rgb: bpy.props.FloatVectorProperty(
+        name="Fog Color",
+        description="",
+        default=(1, 1, 1),
+        min=0,
+        max=1,
+        subtype="COLOR",
+        size=3,
+    )
+    fog_color_alpha: bpy.props.FloatProperty(
+        name="Fog Alpha",
+        description="",
+        default=1,
+        min=0,
+        max=1,
+    )
+
+
+class RDPQWorldDefaultsBlenderProperties(bpy.types.PropertyGroup):
+    registers_: bpy.props.PointerProperty(
+        type=RDPQWorldDefaultsBlenderRegistersProperties
+    )
+
+    @property
+    def registers(self) -> RDPQWorldDefaultsBlenderRegistersProperties:
+        return self.registers_
+
+
 class RDPQWorldDefaultsRenderModeProperties(bpy.types.PropertyGroup):
     antialias: bpy.props.EnumProperty(
         name="Antialias",
@@ -165,11 +203,16 @@ class RDPQWorldDefaultsProperties(bpy.types.PropertyGroup):
     )
 
     combiner_: bpy.props.PointerProperty(type=RDPQWorldDefaultsCombinerProperties)
+    blender_: bpy.props.PointerProperty(type=RDPQWorldDefaultsBlenderProperties)
     render_mode_: bpy.props.PointerProperty(type=RDPQWorldDefaultsRenderModeProperties)
 
     @property
     def combiner(self) -> RDPQWorldDefaultsCombinerProperties:
         return self.combiner_
+
+    @property
+    def blender(self) -> RDPQWorldDefaultsBlenderProperties:
+        return self.blender_
 
     @property
     def render_mode(self) -> RDPQWorldDefaultsRenderModeProperties:
@@ -224,6 +267,12 @@ class WORLD_RDPQ_DEFAULTS_DEFAULTS_type:
             prim_lod_frac = 0
             env = (1, 1, 1, 1)
             prim = (1, 1, 1, 1)
+
+    class blender:
+        class registers:
+            blend_color_rgb = (1, 1, 1)
+            fog_color_rgb = (1, 1, 1)
+            fog_color_alpha = 1
 
     class render_mode:
         antialias = "STANDARD"

@@ -162,7 +162,23 @@ def rdpq_material_properties_to_dict(
     else:
         mat_data["blender.mode"] = mat_rdpq.blender.preset.lower()
         if mat_rdpq.blender.preset == "MULTIPLY_CONST":
-            mat_data["blender.const"] = str(mat_rdpq.blender.fog_alpha)
+            mat_data["blender.const"] = str(mat_rdpq.blender.registers.fog_color_alpha)
+
+    if mat_rdpq.blender.registers.set_blend_color_rgb:
+        mat_data["blender.reg.blend.rgb"] = ",".join(
+            str(_c) for _c in mat_rdpq.blender.registers.blend_color_rgb
+        )
+    if mat_rdpq.blender.registers.set_fog_color_rgb:
+        mat_data["blender.reg.fog.rgb"] = ",".join(
+            str(_c) for _c in mat_rdpq.blender.registers.fog_color_rgb
+        )
+    if (
+        mat_rdpq.blender.preset != "MULTIPLY_CONST"
+        and mat_rdpq.blender.registers.set_fog_color_alpha
+    ):
+        mat_data["blender.reg.fog.alpha"] = str(
+            mat_rdpq.blender.registers.fog_color_alpha
+        )
 
     if mat_rdpq.override_render_mode.override_antialias:
         mat_data["rm.antialias"] = mat_rdpq.override_render_mode.antialias.lower()

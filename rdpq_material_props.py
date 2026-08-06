@@ -527,6 +527,37 @@ class RDPQMaterialCombinerProperties(bpy.types.PropertyGroup):
         return self.registers_
 
 
+class RDPQMaterialBlenderRegistersProperties(bpy.types.PropertyGroup):
+    set_blend_color_rgb: bpy.props.BoolProperty(name="Set Blend Color")
+    blend_color_rgb: bpy.props.FloatVectorProperty(
+        name="Blend Color",
+        description="",
+        default=(1, 1, 1),
+        min=0,
+        max=1,
+        subtype="COLOR",
+        size=3,
+    )
+    set_fog_color_rgb: bpy.props.BoolProperty(name="Set Fog Color")
+    fog_color_rgb: bpy.props.FloatVectorProperty(
+        name="Fog Color",
+        description="",
+        default=(1, 1, 1),
+        min=0,
+        max=1,
+        subtype="COLOR",
+        size=3,
+    )
+    set_fog_color_alpha: bpy.props.BoolProperty(name="Set Fog Alpha")
+    fog_color_alpha: bpy.props.FloatProperty(
+        name="Fog Alpha",
+        description="",
+        default=1,
+        min=0,
+        max=1,
+    )
+
+
 BLEND1_A_ITEMS = (
     ("IN_RGB", "IN_RGB", ""),
     ("MEMORY_RGB", "MEMORY_RGB", ""),
@@ -672,31 +703,11 @@ class RDPQMaterialBlenderProperties(bpy.types.PropertyGroup):
         default="INV_MUX_ALPHA",
     )
 
-    blend_color: bpy.props.FloatVectorProperty(
-        name="Blend Color",
-        description="",
-        default=(1, 1, 1),
-        min=0,
-        max=1,
-        subtype="COLOR",
-        size=3,
-    )
-    fog_color: bpy.props.FloatVectorProperty(
-        name="Fog Color",
-        description="",
-        default=(1, 1, 1),
-        min=0,
-        max=1,
-        subtype="COLOR",
-        size=3,
-    )
-    fog_alpha: bpy.props.FloatProperty(
-        name="Fog Alpha",
-        description="",
-        default=1,
-        min=0,
-        max=1,
-    )
+    registers_: bpy.props.PointerProperty(type=RDPQMaterialBlenderRegistersProperties)
+
+    @property
+    def registers(self) -> RDPQMaterialBlenderRegistersProperties:
+        return self.registers_
 
 
 class RDPQMaterialOverrideRenderModeProperties(bpy.types.PropertyGroup):
@@ -981,11 +992,20 @@ LIBDRAGON_RDPQ_PROPS_LIST = RecursivePropsList(
                         "a_1",
                         "q_1",
                         "b_1",
-                        "blend_color",
-                        "fog_color",
-                        "fog_alpha",
                     ),
-                    {},
+                    {
+                        "registers": RecursivePropsList(
+                            (
+                                "set_blend_color_rgb",
+                                "blend_color_rgb",
+                                "set_fog_color_rgb",
+                                "fog_color_rgb",
+                                "set_fog_color_alpha",
+                                "fog_color_alpha",
+                            ),
+                            {},
+                        )
+                    },
                 ),
                 "override_render_mode": RecursivePropsList(
                     (
