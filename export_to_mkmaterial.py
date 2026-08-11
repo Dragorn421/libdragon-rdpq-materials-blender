@@ -30,6 +30,21 @@ COMBINER_MUXES_MKMATERIAL_MAP = {
     "KEYSCALE": "keyscale",
 }
 
+BLENDER_MUXES_MKMATERIAL_MAP = {
+    "0": "0",
+    "1": "1",
+    "BLEND_RGB": "blend_rgb",
+    "CYCLE1_RGB": "cycle1_rgb",
+    "FOG_ALPHA": "fog_alpha",
+    "FOG_RGB": "fog_rgb",
+    "IN_ALPHA": "in_alpha",
+    "IN_RGB": "in_rgb",
+    "INV_MUX_ALPHA": "inv_mux_alpha",
+    "MEMORY_CVG": "memory_cvg",
+    "MEMORY_RGB": "memory_rgb",
+    "SHADE_ALPHA": "shade_alpha",
+}
+
 
 def rdpq_material_properties_to_dict(
     mat_rdpq: rdpq_material_props.RDPQMaterialProperties,
@@ -155,10 +170,21 @@ def rdpq_material_properties_to_dict(
             str(_c) for _c in mat_rdpq.combiner.registers.prim
         )
 
+    map = BLENDER_MUXES_MKMATERIAL_MAP
+
     if mat_rdpq.blender.preset == "CUSTOM_1_PASS":
-        raise NotImplementedError()
+        mat_data["blender.mode.raw"] = (
+            f"({map[mat_rdpq.blender.p]},{map[mat_rdpq.blender.a]},"
+            f"{map[mat_rdpq.blender.q]},{map[mat_rdpq.blender.b]})"
+        )
     elif mat_rdpq.blender.preset == "CUSTOM_2_PASSES":
-        raise NotImplementedError()
+        mat_data["blender.mode.raw"] = (
+            f"({map[mat_rdpq.blender.p_0]},{map[mat_rdpq.blender.a_0]},"
+            f"{map[mat_rdpq.blender.q_0]},{map[mat_rdpq.blender.b_0]})"
+            ","
+            f"({map[mat_rdpq.blender.p_1]},{map[mat_rdpq.blender.a_1]},"
+            f"{map[mat_rdpq.blender.q_1]},{map[mat_rdpq.blender.b_1]})"
+        )
     else:
         mat_data["blender.mode"] = mat_rdpq.blender.preset.lower()
         if mat_rdpq.blender.preset == "MULTIPLY_CONST":
