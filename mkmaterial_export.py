@@ -45,6 +45,25 @@ BLENDER_MUXES_MKMATERIAL_MAP = {
     "SHADE_ALPHA": "shade_alpha",
 }
 
+DITHER_MKMATERIAL_MAP = {
+    "RGB_SQUARE_A_SQUARE": ("square", "square"),
+    "RGB_SQUARE_A_INVSQUARE": ("square", "invsquare"),
+    "RGB_SQUARE_A_NOISE": ("square", "noise"),
+    "RGB_SQUARE_A_NONE": ("square", "none"),
+    "RGB_BAYER_A_BAYER": ("bayer", "bayer"),
+    "RGB_BAYER_A_INVBAYER": ("bayer", "invbayer"),
+    "RGB_BAYER_A_NOISE": ("bayer", "noise"),
+    "RGB_BAYER_A_NONE": ("bayer", "none"),
+    "RGB_NOISE_A_SQUARE": ("noise", "square"),
+    "RGB_NOISE_A_INVSQUARE": ("noise", "invsquare"),
+    "RGB_NOISE_A_NOISE": ("noise", "noise"),
+    "RGB_NOISE_A_NONE": ("noise", "none"),
+    "RGB_NONE_A_BAYER": ("none", "bayer"),
+    "RGB_NONE_A_INVBAYER": ("none", "invbayer"),
+    "RGB_NONE_A_NOISE": ("none", "noise"),
+    "RGB_NONE_A_NONE": ("none", "none"),
+}
+
 
 def rdpq_material_properties_to_dict(
     mat_rdpq: rdpq_material_props.RDPQMaterialProperties,
@@ -211,24 +230,9 @@ def rdpq_material_properties_to_dict(
     if mat_rdpq.override_render_mode.override_fog:
         mat_data["rm.fog"] = mat_rdpq.override_render_mode.fog.lower()
     if mat_rdpq.override_render_mode.override_dithering:
-        mat_data["rm.dither.rgb"], mat_data["rm.dither.alpha"] = {
-            "RGB_SQUARE_A_SQUARE": ("square", "square"),
-            "RGB_SQUARE_A_INVSQUARE": ("square", "invsquare"),
-            "RGB_SQUARE_A_NOISE": ("square", "noise"),
-            "RGB_SQUARE_A_NONE": ("square", "none"),
-            "RGB_BAYER_A_BAYER": ("bayer", "bayer"),
-            "RGB_BAYER_A_INVBAYER": ("bayer", "invbayer"),
-            "RGB_BAYER_A_NOISE": ("bayer", "noise"),
-            "RGB_BAYER_A_NONE": ("bayer", "none"),
-            "RGB_NOISE_A_SQUARE": ("noise", "square"),
-            "RGB_NOISE_A_INVSQUARE": ("noise", "invsquare"),
-            "RGB_NOISE_A_NOISE": ("noise", "noise"),
-            "RGB_NOISE_A_NONE": ("noise", "none"),
-            "RGB_NONE_A_BAYER": ("none", "bayer"),
-            "RGB_NONE_A_INVBAYER": ("none", "invbayer"),
-            "RGB_NONE_A_NOISE": ("none", "noise"),
-            "RGB_NONE_A_NONE": ("none", "none"),
-        }[(mat_rdpq.override_render_mode.dithering)]
+        mat_data["rm.dither.rgb"], mat_data["rm.dither.alpha"] = DITHER_MKMATERIAL_MAP[
+            mat_rdpq.override_render_mode.dithering
+        ]
     if mat_rdpq.override_render_mode.override_texture_filtering:
         mat_data["rm.filtering"] = (
             mat_rdpq.override_render_mode.texture_filtering.lower()

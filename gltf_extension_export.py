@@ -1,7 +1,7 @@
 import bpy
 
-from . import export_to_mkmaterial
 from . import gltf_extension_common
+from . import mkmaterial_export
 from . import util
 
 if gltf_extension_common.gltf_export_props_use_register_panel:
@@ -138,7 +138,7 @@ class glTF2ExportUserExtension:
         assert scene is not None
         if not util.LIBDRAGON_RDPQ(scene).gltf_extension_export.enabled:
             return
-        jmat, mat_textures = export_to_mkmaterial.rdpq_material_properties_to_dict(
+        jmat, mat_textures = mkmaterial_export.rdpq_material_properties_to_dict(
             util.LIBDRAGON_RDPQ(blender_material)
         )
         for i in (0, 1):

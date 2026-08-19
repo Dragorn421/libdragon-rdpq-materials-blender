@@ -1,6 +1,7 @@
 import bpy
 
 from . import gltf_extension_common
+from . import mkmaterial_import
 from . import util
 
 if gltf_extension_common.gltf_export_props_use_register_panel:
@@ -60,16 +61,19 @@ class glTF2ImportUserExtension:
         if jmat is None:
             return
         mat_rdpq = util.LIBDRAGON_RDPQ(blender_mat)
-        image_index = jmat.get("tex0.source")
-        if image_index is not None:
-            gltf_image = gltf.data.images[image_index]
-            if gltf_image.blender_image_name is None:
-                create_blender_image(gltf, image_index)
-            assert isinstance(gltf_image.blender_image_name, str)
-            blender_image = bpy.data.images[gltf_image.blender_image_name]
-            mat_rdpq.texture0.image = blender_image
-            mat_rdpq.texture0.s.repeats_inf = True
-            mat_rdpq.texture0.t.repeats_inf = True
+        mat_textures = {}
+        for i in (0, 1):
+            image_index = jmat.get(f"tex{i}.source")
+            if image_index is not None:
+                gltf_image = gltf.data.images[image_index]
+                if gltf_image.blender_image_name is None:
+                    create_blender_image(gltf, image_index)
+                assert isinstance(gltf_image.blender_image_name, str)
+                blender_image = bpy.data.images[gltf_image.blender_image_name]
+                mat_textures[i] = blender_image
+        mkmaterial_import.rdpq_material_properties_from_dict(
+            mat_rdpq, jmat, mat_textures
+        )
 
 
 class glTFExtensionImportProperties(bpy.types.PropertyGroup):

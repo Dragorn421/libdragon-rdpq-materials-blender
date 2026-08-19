@@ -14,10 +14,10 @@ bl_info = {
 import bpy
 import bpy.utils
 
-from . import export_to_mkmaterial
 from . import gltf_extension_common
 from . import gltf_extension_export
 from . import gltf_extension_import
+from . import mkmaterial_export
 from .renderer import renderer
 from . import rdpq_material_props
 from . import rdpq_world_defaults
@@ -41,10 +41,11 @@ import importlib
 
 loc = locals()
 for n in (
-    "export_to_mkmaterial",
     "gltf_extension_common",
     "gltf_extension_export",
     "gltf_extension_import",
+    "mkmaterial_export",
+    "mkmaterial_import",
     "rdpq_material_props",
     "rdpq_material_props_logic",
     "sync_to_fast64",
@@ -385,7 +386,7 @@ classes = (
     rdpq_material_props.RDPQMaterialProperties,
     sync_to_fast64.RDPQMaterialPropsToFast64Operator,
     sync_to_fast64.RDPQMaterialRecreateAsFast64Operator,
-    export_to_mkmaterial.RDPQMaterialExportOperator,
+    mkmaterial_export.RDPQMaterialExportOperator,
     rdpq_world_defaults.RDPQWorldDefaultsPlaceholderAddOperator,
     rdpq_world_defaults.RDPQWorldDefaultsPlaceholderRemoveOperator,
     RDPQWorldPanel,
