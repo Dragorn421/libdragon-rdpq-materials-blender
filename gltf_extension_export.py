@@ -138,6 +138,10 @@ class glTF2ExportUserExtension:
         assert scene is not None
         if not util.LIBDRAGON_RDPQ(scene).gltf_extension_export.enabled:
             return
+        if not isinstance(blender_material, bpy.types.Material):
+            # work around bug in the gltf addon shipped with Blender 5.2.0
+            # https://github.com/KhronosGroup/glTF-Blender-IO/issues/2732
+            blender_material = bpy.data.materials[gltf2_material.name]
         jmat, mat_textures = mkmaterial_export.rdpq_material_properties_to_dict(
             util.LIBDRAGON_RDPQ(blender_material)
         )
