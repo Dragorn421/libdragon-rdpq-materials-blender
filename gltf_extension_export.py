@@ -1,3 +1,5 @@
+import traceback
+
 import bpy
 
 from . import gltf_extension_common
@@ -129,6 +131,20 @@ class glTF2ExportUserExtension:
         self.properties = util.LIBDRAGON_RDPQ(scene).gltf_extension_export
 
     def gather_material_hook(
+        self,
+        gltf2_material: "io_scene_gltf2.io.com.gltf2_io.Material",  # type: ignore
+        blender_material: bpy.types.Material,
+        export_settings,
+    ):
+        try:
+            self.gather_material_hook_impl(
+                gltf2_material, blender_material, export_settings
+            )
+        except Exception:
+            traceback.print_exc()
+            raise
+
+    def gather_material_hook_impl(
         self,
         gltf2_material: "io_scene_gltf2.io.com.gltf2_io.Material",  # type: ignore
         blender_material: bpy.types.Material,
