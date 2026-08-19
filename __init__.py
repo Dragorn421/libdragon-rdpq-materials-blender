@@ -15,22 +15,26 @@ import bpy
 import bpy.utils
 
 from . import export_to_mkmaterial
-from . import gltf_extension
+from . import gltf_extension_common
+from . import gltf_extension_export
+from . import gltf_extension_import
 from .renderer import renderer
 from . import rdpq_material_props
 from . import rdpq_world_defaults
 from . import sync_to_fast64
 from . import util
 
-# import glTF2ExportUserExtension into __init__.py
+# import glTF2{Export,Import}UserExtension into __init__.py
 # to make the extension visible to the glTF addon
-from .gltf_extension import glTF2ExportUserExtension
+from .gltf_extension_export import glTF2ExportUserExtension
+from .gltf_extension_import import glTF2ImportUserExtension
 
-# Used by old versions of the gltf addon
-if gltf_extension.gltf_export_props_use_draw:
-    from .gltf_extension import draw
-if gltf_extension.gltf_export_props_use_register_panel:
-    from .gltf_extension import register_panel
+if gltf_extension_common.gltf_export_props_use_register_panel:
+    from .gltf_extension_common import register_panel
+if gltf_extension_common.gltf_export_props_use_draw:
+    from .gltf_extension_common import draw
+if gltf_extension_common.gltf_export_props_use_importer_draw_import:
+    from .gltf_extension_import import draw_import
 
 
 import importlib
@@ -38,7 +42,9 @@ import importlib
 loc = locals()
 for n in (
     "export_to_mkmaterial",
-    "gltf_extension",
+    "gltf_extension_common",
+    "gltf_extension_export",
+    "gltf_extension_import",
     "rdpq_material_props",
     "rdpq_material_props_logic",
     "sync_to_fast64",
@@ -349,13 +355,17 @@ class RDPQMaterialPanel(bpy.types.Panel):
 
 
 class RDPQSceneProperties(bpy.types.PropertyGroup):
-    gltf_extension: bpy.props.PointerProperty(
-        type=gltf_extension.glTFExtensionProperties
+    gltf_extension_export: bpy.props.PointerProperty(
+        type=gltf_extension_export.glTFExtensionExportProperties
+    )
+    gltf_extension_import: bpy.props.PointerProperty(
+        type=gltf_extension_import.glTFExtensionImportProperties
     )
 
 
 classes = (
-    gltf_extension.glTFExtensionProperties,
+    gltf_extension_export.glTFExtensionExportProperties,
+    gltf_extension_import.glTFExtensionImportProperties,
     RDPQSceneProperties,
     rdpq_world_defaults.RDPQWorldDefaultsPlaceholderProperties,
     rdpq_world_defaults.RDPQWorldDefaultsCombinerRegistersProperties,
@@ -403,11 +413,11 @@ def register():
         lambda: sync_to_fast64.handler_load_post_start_materials_auto_sync_to_fast64()
     )
 
-    if gltf_extension.gltf_export_props_use_exporter_extension_layout_draw:
+    if gltf_extension_common.gltf_export_props_use_exporter_extension_layout_draw:
         from io_scene_gltf2 import exporter_extension_layout_draw  # type: ignore
 
         exporter_extension_layout_draw["libdragon RDPQ materials"] = (
-            gltf_extension.draw_gltf_extension_props
+            gltf_extension_export.draw_gltf_extension_props
         )
 
     for panel in renderer.get_compatible_panels():
@@ -419,7 +429,7 @@ def unregister():
         if renderer.RDPQMaterialsRenderEngine.bl_idname in panel.COMPAT_ENGINES:
             panel.COMPAT_ENGINES.remove(renderer.RDPQMaterialsRenderEngine.bl_idname)
 
-    if gltf_extension.gltf_export_props_use_exporter_extension_layout_draw:
+    if gltf_extension_common.gltf_export_props_use_exporter_extension_layout_draw:
         from io_scene_gltf2 import exporter_extension_layout_draw  # type: ignore
 
         del exporter_extension_layout_draw["libdragon RDPQ materials"]

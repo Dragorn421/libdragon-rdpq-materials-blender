@@ -1,54 +1,10 @@
 import bpy
-import addon_utils
 
 from . import export_to_mkmaterial
+from . import gltf_extension_common
 from . import util
 
-glTF2_addon_ver = None
-
-for mod in addon_utils.modules():  # type: ignore
-    if mod.__name__ == "io_scene_gltf2":
-        glTF2_addon_ver = mod.bl_info["version"]
-        break
-
-
-# from io_scene_gltf2 import exporter_extension_layout_draw
-# https://github.com/KhronosGroup/glTF-Blender-IO/commits/49b56804049c4724c89f6be49ea8382c0b63f9da/
-gltf_export_props_use_exporter_extension_layout_draw = (
-    glTF2_addon_ver is not None and glTF2_addon_ver >= (4, 4, 36)
-)
-# def draw()
-# https://github.com/KhronosGroup/glTF-Blender-IO/commits/fae512b1981493794ccafb4b187f9ada3c5d3b1f/
-gltf_export_props_use_draw = (
-    glTF2_addon_ver is not None
-    and glTF2_addon_ver < (4, 4, 36)
-    and glTF2_addon_ver >= (4, 2, 40)
-)
-# def register_panel()
-gltf_export_props_use_register_panel = (
-    glTF2_addon_ver is not None and glTF2_addon_ver < (4, 2, 40)
-)
-
-if gltf_export_props_use_draw:
-
-    def draw(context, layout):
-        draw_gltf_extension_props(context, layout)
-
-
-if gltf_export_props_use_register_panel:
-    # https://github.com/KhronosGroup/glTF-Blender-IO/blob/3ade756cba3d9631b77cf002462b4315562e1869/example-addons/example_gltf_exporter_extension/__init__.py#L43
-    def register_panel():
-        try:
-            bpy.utils.register_class(GLTF_PT_RDPQPanel)
-        except Exception:
-            pass
-        return unregister_panel
-
-    def unregister_panel():
-        try:
-            bpy.utils.unregister_class(GLTF_PT_RDPQPanel)
-        except Exception:
-            pass
+if gltf_extension_common.gltf_export_props_use_register_panel:
 
     class GLTF_PT_RDPQPanel(bpy.types.Panel):
 
@@ -61,7 +17,9 @@ if gltf_export_props_use_register_panel:
         @classmethod
         def poll(cls, context):
             sfile = context.space_data
+            assert isinstance(sfile, bpy.types.SpaceFileBrowser)
             operator = sfile.active_operator
+            assert operator is not None
             return operator.bl_idname == "EXPORT_SCENE_OT_gltf"
 
         def draw(self, context):
@@ -70,8 +28,6 @@ if gltf_export_props_use_register_panel:
 
 
 # https://github.com/KhronosGroup/glTF-Blender-IO/blob/main/example-addons/example_gltf_exporter_extension
-
-glTF_extension_name = "EXT_libdragon_rdpq_materials_jmat"
 
 
 def export_standalone_image(
@@ -87,14 +43,14 @@ def export_standalone_image(
     Note the returned TextureInfo needs to be referenced in the glTF data
     (e.g. in the material extensions dict) for it to be present in the output glTF
     """
-    assert glTF2_addon_ver is not None
+    assert gltf_extension_common.glTF2_addon_ver is not None
 
-    if glTF2_addon_ver >= (4, 3, 12):
+    if gltf_extension_common.glTF2_addon_ver >= (4, 3, 12):
         # https://github.com/KhronosGroup/glTF-Blender-IO/commits/8db37273b5d9819d8e0d964874d77ff3268537fa/
         from io_scene_gltf2.blender.exp.material import (  # type: ignore
             texture_info as gltf2_blender_gather_texture_info,
         )
-    elif glTF2_addon_ver >= (3, 5, 8):
+    elif gltf_extension_common.glTF2_addon_ver >= (3, 5, 8):
         # https://github.com/KhronosGroup/glTF-Blender-IO/commits/5c52c313bcadb4703eb34ec6d5b51d1e47c60089/
         from io_scene_gltf2.blender.exp.material import (  # type: ignore
             gltf2_blender_gather_texture_info,
@@ -128,10 +84,10 @@ def export_standalone_image(
         # Older versions of the gltf addon require passing in an input socket
         gltf_socket = temp_shader_node.inputs[0]
 
-        if glTF2_addon_ver >= (3, 3, 27):
+        if gltf_extension_common.glTF2_addon_ver >= (3, 3, 27):
             # https://github.com/KhronosGroup/glTF-Blender-IO/commits/c7e0b79bd73597da0783b36f2417e74db219716b/
 
-            if glTF2_addon_ver >= (4, 3, 12):
+            if gltf_extension_common.glTF2_addon_ver >= (4, 3, 12):
                 # https://github.com/KhronosGroup/glTF-Blender-IO/commits/8db37273b5d9819d8e0d964874d77ff3268537fa/
                 from io_scene_gltf2.blender.exp.material import (  # type: ignore
                     search_node_tree as gltf2_blender_search_node_tree,
@@ -170,7 +126,7 @@ class glTF2ExportUserExtension:
         self.Extension = Extension
         scene = bpy.context.scene
         assert scene is not None
-        self.properties = util.LIBDRAGON_RDPQ(scene).gltf_extension
+        self.properties = util.LIBDRAGON_RDPQ(scene).gltf_extension_export
 
     def gather_material_hook(
         self,
@@ -178,6 +134,10 @@ class glTF2ExportUserExtension:
         blender_material: bpy.types.Material,
         export_settings,
     ):
+        scene = bpy.context.scene
+        assert scene is not None
+        if not util.LIBDRAGON_RDPQ(scene).gltf_extension_export.enabled:
+            return
         jmat, mat_textures = export_to_mkmaterial.rdpq_material_properties_to_dict(
             util.LIBDRAGON_RDPQ(blender_material)
         )
@@ -195,10 +155,10 @@ class glTF2ExportUserExtension:
                 # in the gltf output.  Additionally texN.source will be set to the
                 # corresponding index in the images array.
                 jmat[f"tex{i}.source"] = gathered_texture_info.index.source
-        gltf2_material.extensions[glTF_extension_name] = jmat
+        gltf2_material.extensions[gltf_extension_common.glTF_extension_name] = jmat
 
 
-class glTFExtensionProperties(bpy.types.PropertyGroup):
+class glTFExtensionExportProperties(bpy.types.PropertyGroup):
     enabled: bpy.props.BoolProperty(
         name="libdragon RDPQ materials",
         description="Include this extension in the exported glTF file.",
@@ -210,4 +170,4 @@ def draw_gltf_extension_props(context: bpy.types.Context, layout: bpy.types.UILa
     layout.use_property_split = False
     scene = context.scene
     assert scene is not None
-    layout.prop(util.LIBDRAGON_RDPQ(scene).gltf_extension, "enabled")
+    layout.prop(util.LIBDRAGON_RDPQ(scene).gltf_extension_export, "enabled")
