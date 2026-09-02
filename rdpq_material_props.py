@@ -56,6 +56,7 @@ class RDPQMaterialTextureProperties(bpy.types.PropertyGroup):
         type=bpy.types.Image,
         name="Image",
         description="",
+        update=rdpq_material_props_logic.on_update_texture_image,
     )
     format: bpy.props.EnumProperty(
         name="Format",

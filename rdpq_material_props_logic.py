@@ -1,5 +1,7 @@
 import bpy
 
+from . import util
+
 # Note: don't get the material from the context,
 # for example during gltf import context.material is not set.
 
@@ -224,3 +226,40 @@ def on_update_blender_preset(self, context: bpy.types.Context):
         mat_rdpq_bl.a_1 = "IN_ALPHA"
         mat_rdpq_bl.q_1 = "MEMORY_RGB"
         mat_rdpq_bl.b_1 = "1"
+
+
+SHADER_NODE_TEX_IMAGE_NAME = "libdragon RDPQ materials for face texture selection"
+
+
+# This function ensures there is an active texture image shader node with the current
+# material's image in the material's nodes.  This makes "face texture selection" work,
+# the feature that switches the image in the UV editor based on the currently active
+# face in edit mode.
+def on_update_texture_image(self, context: bpy.types.Context):
+    from . import rdpq_material_props
+
+    assert isinstance(self, rdpq_material_props.RDPQMaterialTextureProperties)
+    mat = self.id_data
+    assert isinstance(mat, bpy.types.Material)
+
+    image = None
+    if mat is not None:
+        mat_rdpq = util.LIBDRAGON_RDPQ(mat)
+        if mat_rdpq.use_texture0:
+            image = mat_rdpq.texture0.image
+        if image is None and mat_rdpq.use_texture1:
+            image = mat_rdpq.texture1.image
+
+    if mat.node_tree is None:
+        mat.node_tree = bpy.data.node_groups.new(mat.name, "ShaderNodeTree")  # type: ignore
+    assert mat.node_tree is not None
+    node = mat.node_tree.nodes.get(SHADER_NODE_TEX_IMAGE_NAME)
+    if node is not None and not isinstance(node, bpy.types.ShaderNodeTexImage):
+        node.name = "_" + SHADER_NODE_TEX_IMAGE_NAME
+        node = None
+    if node is None:
+        node = mat.node_tree.nodes.new("ShaderNodeTexImage")
+        assert isinstance(node, bpy.types.ShaderNodeTexImage)
+        node.name = SHADER_NODE_TEX_IMAGE_NAME
+    node.image = image
+    mat.node_tree.nodes.active = node
