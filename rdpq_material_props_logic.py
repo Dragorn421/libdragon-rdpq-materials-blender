@@ -243,12 +243,11 @@ def on_update_texture_image(self, context: bpy.types.Context):
     assert isinstance(mat, bpy.types.Material)
 
     image = None
-    if mat is not None:
-        mat_rdpq = util.LIBDRAGON_RDPQ(mat)
-        if mat_rdpq.use_texture0:
-            image = mat_rdpq.texture0.image
-        if image is None and mat_rdpq.use_texture1:
-            image = mat_rdpq.texture1.image
+    mat_rdpq = util.LIBDRAGON_RDPQ(mat)
+    if mat_rdpq.use_texture0:
+        image = mat_rdpq.texture0.image
+    if image is None and mat_rdpq.use_texture1:
+        image = mat_rdpq.texture1.image
 
     if mat.node_tree is None:
         mat.node_tree = bpy.data.node_groups.new(mat.name, "ShaderNodeTree")  # type: ignore
